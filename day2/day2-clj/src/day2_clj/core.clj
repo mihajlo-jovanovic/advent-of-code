@@ -13,7 +13,7 @@
               program
               (let [op1 (get program (get program (inc pos)))
                     op2 (get program (get program (+ pos 2)))]
-                (recur (assoc program (get program (+ pos 3)) ((op (get program pos)) op1 op2)) (+ pos 4)))))]
+                (recur (assoc program (get program (+ pos 3)) ((operation (get program pos)) op1 op2)) (+ pos 4)))))]
     (first  (helper program 0))))
 
 (defn get-param
