@@ -9,6 +9,6 @@
 
 (defn -main
   "puzzle solution"
-  [in]
-  (let [input-seq (map #(Integer/parseInt %) (str/split in #""))]
+  []
+  (let [input-seq (map #(Integer/parseInt %) (str/split (slurp "resources/input") #""))]
     (partition-all 25 (reduce combine-layers (partition-all 150 input-seq)))))

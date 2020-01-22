@@ -85,7 +85,7 @@
   [_ modes {:keys [memory pointer input] :as program}]
   (let [[rptr] (parameters memory pointer [1])]
     (-> program
-        (update :memory assoc rptr (input))
+        (update :memory assoc rptr (input pointer))
         (update :pointer + 2))))
 
 (defmethod instruction 4
