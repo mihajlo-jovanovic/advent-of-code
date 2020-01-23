@@ -1,3 +1,4 @@
+;;"borrowed" from https://github.com/Lokeh/advent-2019/
 (ns intcode-clj.core)
 
 (require '[clojure.string :as string])
