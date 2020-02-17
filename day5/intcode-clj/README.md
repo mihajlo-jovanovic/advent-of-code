@@ -1,32 +1,16 @@
 # intcode-clj
 
-FIXME: description
+My solution to intcode puzles from day 5 & 7. Finally figures out how to organize clj code into packages...
 
 ## Installation
 
-Download from http://example.com/FIXME.
+lein test
 
 ## Usage
 
-FIXME: explanation
+This is how you might invoke the main function:
 
-    $ java -jar intcode-clj-0.1.0-standalone.jar [args]
-
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+    $ (run (slurp "resources/input.dat") 0)
 
 ## License
 
