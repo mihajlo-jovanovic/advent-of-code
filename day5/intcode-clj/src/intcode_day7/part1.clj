@@ -1,12 +1,13 @@
 (ns intcode-day7.part1
-  (:require [intcode-clj.core :as intcode] ))
+  (:require [intcode.core :as intcode] ))
 
-(defn di [s ph]
-  (let [a (intcode/run s #(if (= 0 %) (str (first ph)) "0"))
-        b (intcode/run s #(if (= 0 %) (str (second ph)) (str (last a))))
-        c (intcode/run s #(if (= 0 %) (str (nth ph 2)) (str (last b))))
-        d (intcode/run s #(if (= 0 %) (str (nth ph 3)) (str (last c))))]
-    (last (intcode/run s #(if (= 0 %) (str (last ph)) (str (last d))))))
+(defn chain-amps [s [f sec t m l]]
+  (let [in #(if (= 0 %3) (str %) (str %2))
+        a (intcode/run s (partial in f 0))
+        b (intcode/run s (partial in sec (last a)))
+        c (intcode/run s (partial in t (last b)))
+        d (intcode/run s (partial in m (last c)))]
+    (last (intcode/run s (partial in l (last d)))))
 )
 
 (defn permutations [s]
@@ -18,4 +19,4 @@
 
 (defn part1
   []
-  (apply max (map (partial di (slurp "resources/day7-input.dat")) (permutations '(0 1 2 3 4)))))
+  (apply max (map (partial chain-amps (slurp "resources/day7-input.dat")) (permutations '(0 1 2 3 4)))))
