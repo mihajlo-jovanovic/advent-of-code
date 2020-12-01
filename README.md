@@ -1,0 +1,3 @@
+# advent-of-code-2020
+My chance to learn Rust and have fun doin' it...
+
