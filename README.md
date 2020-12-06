@@ -1,6 +1,8 @@
 # advent-of-code-2020
 My chance to learn Rust and have fun doin' it...
 
+I am using a very handy [cargo aoc](https://github.com/gobanos/cargo-aoc).
+
 # To run:
 
 `cargo aoc` 
