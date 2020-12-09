@@ -38,7 +38,7 @@ fn part1(lines: &[Passwords]) -> usize {
 fn is_valid_part2(p: &Passwords) -> bool {
     let pos1 = p.pwd.chars().nth((p.min - 1).try_into().unwrap()).unwrap();
     let pos2 = p.pwd.chars().nth((p.max - 1).try_into().unwrap()).unwrap();
-    return pos1 == p.c && pos2 != p.c || pos1 != p.c && pos2 == p.c;
+    pos1 == p.c && pos2 != p.c || pos1 != p.c && pos2 == p.c
 }
 
 #[aoc(day2 part2)]
