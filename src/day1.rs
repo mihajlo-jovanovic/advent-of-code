@@ -39,12 +39,22 @@ fn part2(lines: &[i32]) -> Option<i32> {
 
 #[allow(dead_code)]
 fn part1_alt(lines: &[i32]) -> Option<i32> {
-    lines.iter().permutations(2).filter(|p| p[0]+p[1]==SUM).map(|p| p[0]*p[1]).next()
+    lines
+        .iter()
+        .permutations(2)
+        .filter(|p| p[0] + p[1] == SUM)
+        .map(|p| p[0] * p[1])
+        .next()
 }
 
 #[allow(dead_code)]
 fn part2_alt(lines: &[i32]) -> Option<i32> {
-    lines.iter().permutations(3).filter(|p| p[0]+p[1]+p[2]==SUM).map(|p| p[0]*p[1]*p[2]).next()
+    lines
+        .iter()
+        .permutations(3)
+        .filter(|p| p[0] + p[1] + p[2] == SUM)
+        .map(|p| p[0] * p[1] * p[2])
+        .next()
 }
 
 #[allow(dead_code)]
