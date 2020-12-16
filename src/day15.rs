@@ -1,5 +1,30 @@
 use std::collections::HashMap;
 
+#[aoc_generator(day15)]
+fn parse_input(input: &str) -> Vec<u32> {
+    input
+        .lines()
+        .next()
+        .unwrap()
+        .split(',')
+        .map(|c| c.parse::<u32>().unwrap())
+        .collect()
+}
+
+#[aoc(day15, part1)]
+fn part1(input: &[u32]) -> u32 {
+    nth_num_spoken(input, 2020)
+}
+
+#[aoc(day15, part2)]
+fn part2(input: &[u32]) -> u32 {
+    nth_num_spoken(input, 30000000)
+}
+
+fn nth_num_spoken(input: &[u32], n: usize) -> u32 {
+    memory_game(input).nth(n - input.len() - 1).unwrap()
+}
+
 #[derive(Debug)]
 struct MemoryGame {
     curr: u32,
@@ -28,12 +53,17 @@ fn memory_game(seed: &[u32]) -> MemoryGame {
     MemoryGame {
         curr: seed[seed.len() - 1],
         turn: state.len() as u32,
-        state: state,
+        state
     }
 }
 
 #[test]
-fn test_iter() {
-    let game = memory_game(&[5, 1, 9, 18, 13, 8, 0]);
-    assert_eq!(436, game.skip(2012).next().unwrap());
+fn test_seq() {
+    assert_eq!(1, nth_num_spoken(&[1, 3, 2], 2020));
+    assert_eq!(10, nth_num_spoken(&[2, 1, 3], 2020));
+    assert_eq!(27, nth_num_spoken(&[1, 2, 3], 2020));
+    assert_eq!(78, nth_num_spoken(&[2, 3, 1], 2020));
+    assert_eq!(438, nth_num_spoken(&[3, 2, 1], 2020));
+    assert_eq!(1836, nth_num_spoken(&[3, 1, 2], 2020));
+    //assert_eq!(175594, nth_num_spoken(&[0, 3, 6], 30000000));
 }
