@@ -41,6 +41,30 @@ fn part1(input: &[(char, i32)]) -> i32 {
     manhattan_dist(&rel)
 }
 
+#[aoc(day12, part2)]
+fn part2(input: &[(char, i32)]) -> i32 {
+    let mut waypoint: (i32,i32) = (1,10);
+    let mut ship: (i32, i32) = (0,0);
+    for (dir, steps) in input {
+        match dir {
+            'N' => waypoint = (waypoint.0 + steps, waypoint.1),
+            'S' => waypoint = (waypoint.0 - steps, waypoint.1),
+            'E' => waypoint = (waypoint.0,  waypoint.1 + steps),
+            'W' => waypoint = (waypoint.0, waypoint.1 - steps),
+            'R' if *steps == 90 => waypoint = (-waypoint.1, waypoint.0),
+            'R' if *steps == 180 => waypoint = (-waypoint.0, -waypoint.1),
+            'R' if *steps == 270 => waypoint = (waypoint.1, -waypoint.0),
+            'L' if *steps == 270 => waypoint = (-waypoint.1, waypoint.0),
+            'L' if *steps == 180 => waypoint = (-waypoint.0, -waypoint.1),
+            'L' if *steps == 90 => waypoint = (waypoint.1, -waypoint.0),
+            'F' => ship = (ship.0 + waypoint.0 * steps, ship.1 + waypoint.1 * steps),
+            _ => panic!("Ups something went wrong")
+        }
+        println!("waypoint: {:?} ship's position: {:?}", waypoint, ship);
+    }
+    ship.0.abs() + ship.1.abs()
+}
+
 fn rotate(dir: char, deg: u16, action: char) -> char {
     match (action, dir) {
         ('R', 'E') if deg == 90 => 'S',
@@ -97,4 +121,10 @@ fn test_manhattan_distance() {
 #[test]
 fn test_rotation() {
     assert_eq!('S', rotate('E', 90, 'R'));
+}
+
+#[test]
+fn test_part2() {
+    let test_input = [('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)];
+    assert_eq!(286, part2(&test_input));
 }
