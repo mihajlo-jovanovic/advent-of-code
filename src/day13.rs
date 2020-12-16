@@ -83,9 +83,9 @@ fn test_part2() {
     assert_eq!(779210, part2(&input));
     // too slow!
     //     let input = parse_input_part2(
-//         "XYZ,
-// 1789,37,47,1889",
-//     );
+    //         "XYZ,
+    // 1789,37,47,1889",
+    //     );
     //assert_eq!(1202161486, part2(&input));
 }
 

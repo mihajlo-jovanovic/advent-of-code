@@ -53,7 +53,7 @@ fn memory_game(seed: &[u32]) -> MemoryGame {
     MemoryGame {
         curr: seed[seed.len() - 1],
         turn: state.len() as u32,
-        state
+        state,
     }
 }
 

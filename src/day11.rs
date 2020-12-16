@@ -51,8 +51,8 @@ fn part1(state: &HashMap<(i32, i32), bool>) -> usize {
 #[aoc(day11, part2)]
 fn part2(state: &HashMap<(i32, i32), bool>) -> usize {
     let mut prev_state = state.to_owned();
-    let max_x = state.keys().map(|(x,_)| x).max().unwrap();
-    let max_y = state.keys().map(|(_,y)| y).max().unwrap();
+    let max_x = state.keys().map(|(x, _)| x).max().unwrap();
+    let max_y = state.keys().map(|(_, y)| y).max().unwrap();
     loop {
         let mut state_changed = false;
         let mut new_state: HashMap<(i32, i32), bool> = prev_state.clone();
@@ -92,7 +92,14 @@ fn count_neighbors(pos: (i32, i32), state: &HashMap<(i32, i32), bool>) -> usize 
         .count()
 }
 
-fn is_seat_occupied(pos: (i32, i32), state: &HashMap<(i32, i32), bool>, x: i32, y: i32, max_x: i32, max_y: i32) -> bool {
+fn is_seat_occupied(
+    pos: (i32, i32),
+    state: &HashMap<(i32, i32), bool>,
+    x: i32,
+    y: i32,
+    max_x: i32,
+    max_y: i32,
+) -> bool {
     let mut cur: (i32, i32) = (pos.0 + x, pos.1 + y);
     loop {
         if cur.0 > max_x || cur.1 > max_y || cur.0 < 0 || cur.1 < 0 {

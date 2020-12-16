@@ -33,13 +33,11 @@ fn part2(input: &[u32]) -> u64 {
         }
     }
     res.iter()
-        .map(|n| {
-            match n {
-                4 => 7,
-                3 => 4,
-                2 => 2,
-                _ => 1,
-            }
+        .map(|n| match n {
+            4 => 7,
+            3 => 4,
+            2 => 2,
+            _ => 1,
         })
         .product()
 }
