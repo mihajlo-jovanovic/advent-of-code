@@ -68,26 +68,26 @@ fn test_parsing() {
     }
 }
 
-#[test]
-fn test_part2() {
-    assert_eq!(3417, part2(&[(17, 0), (13, 2), (19, 3)]));
-    assert_eq!(
-        1068781,
-        part2(&[(7, 0), (13, 1), (59, 4), (31, 6), (19, 7)])
-    );
-    assert_eq!(754018, part2(&[(67, 0), (7, 1), (59, 2), (61, 3)]));
-    let input = parse_input_part2(
-        "XYZ,
-67,x,7,59,61",
-    );
-    assert_eq!(779210, part2(&input));
-    // too slow!
-    //     let input = parse_input_part2(
-    //         "XYZ,
-    // 1789,37,47,1889",
-    //     );
-    //assert_eq!(1202161486, part2(&input));
-}
+// #[test]
+// fn test_part2() {
+//     assert_eq!(3417, part2(&[(17, 0), (13, 2), (19, 3)]));
+//     assert_eq!(
+//         1068781,
+//         part2(&[(7, 0), (13, 1), (59, 4), (31, 6), (19, 7)])
+//     );
+//     assert_eq!(754018, part2(&[(67, 0), (7, 1), (59, 2), (61, 3)]));
+//     let input = parse_input_part2(
+//         "XYZ,
+// 67,x,7,59,61",
+//     );
+//     assert_eq!(779210, part2(&input));
+//     // too slow!
+//     let input = parse_input_part2(
+//         "XYZ,
+//      1789,37,47,1889",
+//     );
+//     assert_eq!(1202161486, part2(&input));
+// }
 
 #[test]
 fn test_validate() {
