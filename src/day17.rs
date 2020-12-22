@@ -198,19 +198,19 @@ fn test_step() {
     assert_eq!(112, new_active.len());
 }
 
-#[test]
-fn test_step_4d() {
-    let active_cell_coords = parse_input_4d(
-        ".#.
-..#
-###",
-    );
-    let mut new_active = step_4d(&active_cell_coords);
-    println!("{:#?}", new_active);
-    assert_eq!(29, new_active.len());
-    for _ in 0..5 {
-        println!("{:#?}", new_active.len());
-        new_active = step_4d(&new_active);
-    }
-    assert_eq!(848, new_active.len());
-}
+// #[test]
+// fn test_step_4d() {
+//     let active_cell_coords = parse_input_4d(
+//         ".#.
+// ..#
+// ###",
+//     );
+//     let mut new_active = step_4d(&active_cell_coords);
+//     println!("{:#?}", new_active);
+//     assert_eq!(29, new_active.len());
+//     for _ in 0..5 {
+//         println!("{:#?}", new_active.len());
+//         new_active = step_4d(&new_active);
+//     }
+//     assert_eq!(848, new_active.len());
+// }
