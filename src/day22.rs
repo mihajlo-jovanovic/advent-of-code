@@ -65,18 +65,20 @@ fn play_game_recur(deck1_ref: &[u8], deck2_ref: &[u8]) -> (bool, Vec<u8>) {
     let mut deck1 = deck1_ref.to_vec();
     let mut deck2 = deck2_ref.to_vec();
     let mut player_one_won;
-    let mut round = 1;
+    let mut previous_states_deck1: Vec<Vec<u8>> = Vec::new();
+    let mut previous_states_deck2: Vec<Vec<u8>> = Vec::new();
     while !deck1.is_empty() && !deck2.is_empty() {
-        println!(
-            "Playing round {}: player 1: {:#?} player 2: {:#?}",
-            round, deck1, deck2
-        );
-        round += 1;
+        //check for already seen state
+        if previous_states_deck1.contains(&deck1) && previous_states_deck2.contains(&deck2) {
+            return (true, deck1);
+        } else {
+            previous_states_deck1.push(deck1.clone());
+            previous_states_deck2.push(deck2.clone());
+        }
         let p1 = deck1.remove(0);
         let p2 = deck2.remove(0);
         //check for recursive sub-game
         if deck1.len() as u8 >= p1 && deck2.len() as u8 >= p2 {
-            println!("sub-game!");
             player_one_won = play_game_recur(&deck1[0..p1 as usize], &deck2[0..p2 as usize]).0;
         } else {
             player_one_won = p1 > p2;
@@ -136,4 +138,18 @@ Player 2:
         play_game_recur(&parsed.0, &parsed.1).1
     );
     assert_eq!(291, part2(&parsed));
+}
+
+#[test]
+fn test_infinite_loop() {
+    let input = "Player 1:
+43
+19
+
+Player 2:
+2
+29
+14";
+    let parsed = parse_input(input);
+    println!("{:#?}", play_game_recur(&parsed.0, &parsed.1));
 }
