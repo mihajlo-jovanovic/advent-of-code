@@ -32,7 +32,7 @@ fn parse_input(input: &str) -> Vec<Tile> {
 
 #[aoc(day20, part1)]
 fn part1(input: &[Tile]) -> u128 {
-    // find all tiles that have exactly two borders not matchig any other tiles
+    // find all tiles that have exactly two borders not matching any other tiles
     let corners: Vec<Tile> = input
         .iter()
         .filter(|t| {

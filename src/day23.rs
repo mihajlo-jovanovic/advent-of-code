@@ -117,7 +117,9 @@ impl CrabCups {
         .iter()
         .position(|c| *c == 1)
         .expect("Cup with label of 1 not found");
-        (self.cups[(pos+1)%self.cups.len()] * self.cups[(pos+2)%self.cups.len()]) as u64
+        println!("pos of cup labeled 1: {}", pos);
+        println!("two numbers to the right: {}  {}", self.cups[(pos+1)%self.cups.len()], self.cups[(pos+2)%self.cups.len()]);
+        (self.cups[(pos+1)%self.cups.len()] as u64) * (self.cups[(pos+2)%self.cups.len()] as u64)
     }
 }
 
