@@ -15,16 +15,26 @@ fn part1(input: &[u32]) -> String {
     c.get_labels()
 }
 
-// fn part2(input: &[u8]) -> (u32, u32) {
-//     let x = (0..1000000).collect();
-//     let mut c = CrabCups::new(&x, input[0]);
-//     (1,2)
-// }
+#[aoc(day23, part2)]
+fn part2(input: &[u32]) -> u64 {
+    let mut a = input.to_vec();
+    a.extend(10..1000001);
+    println!("total cups: {:?}", a.len());
+    let mut c = CrabCups::new(&a, input[0]);
+    for i in 0..10_000_000 {
+        if i % 10_000 == 0 {
+            println!("move #{:?}", i);
+        }
+        c.make_a_move()
+    }
+    c.get_labels_part2()
+}
 
 #[derive(Debug)]
 pub struct CrabCups {
     cups: VecDeque<u32>,
     current_cup: u32,
+    max_lbl: u32,
 }
 
 impl CrabCups {
@@ -32,6 +42,7 @@ impl CrabCups {
         CrabCups {
             cups: VecDeque::from_iter(cups.iter().copied()),
             current_cup,
+            max_lbl: *cups.iter().max().unwrap(),
         }
     }
 
@@ -62,24 +73,22 @@ impl CrabCups {
                 .drain(self.current_cup_idx() + 1..self.current_cup_idx() + 4)
                 .collect::<VecDeque<_>>();
         }
-        {
-            let mut dest = self.current_cup - 1;
+        // figure out destination label
+        let mut dest = self.current_cup - 1;
+        if dest == 0 {
+            dest = self.max_lbl;
+        }
+        while pick_up.contains(&dest) {
+            dest -= 1;
             if dest == 0 {
-                dest = 9;
-            }
-            while !self.cups.contains(&dest) {
-                dest -= 1;
-                if dest == 0 {
-                    dest = 9;
-                }
-            }
-            let mut i: usize = 1;
-            for cup in pick_up.into_iter() {
-                self.cups
-                    .insert((self.destination_cup_idx(dest) + i) % self.cups.len(), cup);
-                i += 1
+                dest = self.max_lbl;
             }
         }
+        // insert to the right of destination
+        for (i, cup) in pick_up.into_iter().enumerate() {
+            self.cups.insert((self.destination_cup_idx(dest)+i+1) % self.cups.len(), cup);
+        }
+        // finally, set new current cup
         self.current_cup = self.cups[(self.current_cup_idx() + 1) % self.cups.len()];
     }
 
@@ -101,17 +110,26 @@ impl CrabCups {
             .map(|c| c.to_string())
             .collect::<String>()
     }
+
+    fn get_labels_part2(&self) -> u64 {
+        let pos = self
+        .cups
+        .iter()
+        .position(|c| *c == 1)
+        .expect("Cup with label of 1 not found");
+        (self.cups[(pos+1)%self.cups.len()] * self.cups[(pos+2)%self.cups.len()]) as u64
+    }
 }
 
 #[test]
 fn test_making_a_move() {
     let mut c = CrabCups::new(&[3, 8, 9, 1, 2, 5, 4, 6, 7], 3);
     c.make_a_move();
-    println!("{:#?}", c);
+    assert_eq!("54673289", c.get_labels());
     c.make_a_move();
-    println!("{:#?}", c);
+    assert_eq!("32546789", c.get_labels());
     c.make_a_move();
-    println!("{:#?}", c);
+    assert_eq!("34672589", c.get_labels());
 }
 
 #[test]
@@ -120,17 +138,6 @@ fn test_part1() {
     for _ in 0..10 {
         c.make_a_move()
     }
-    println!("{:#?}", c);
     assert_eq!("67384529", part1(&[3, 8, 9, 1, 2, 5, 4, 6, 7]));
     assert_eq!("26354798", part1(&parse_input("284573961")));
-}
-
-#[test]
-fn test_vec_functions() {
-    let mut a = vec![3, 8, 9, 1, 2, 5, 4, 6, 7];
-    let rem: Vec<_> = a.drain(1..4).collect();
-    for (i, el) in rem.iter().enumerate() {
-        a.insert(2 + i, *el);
-    }
-    assert_eq!(a, [3, 2, 8, 9, 1, 5, 4, 6, 7]);
 }
