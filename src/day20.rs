@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::fmt;
+
 #[aoc_generator(day20)]
 fn parse_input(input: &str) -> Vec<Tile> {
     input
@@ -5,7 +8,7 @@ fn parse_input(input: &str) -> Vec<Tile> {
         .map(|t| {
             let first_line = t.lines().next().unwrap();
             let id = first_line[5..first_line.find(':').unwrap()]
-                .parse::<u32>()
+                .parse::<usize>()
                 .unwrap();
             let mut x: i32 = 0;
             let mut y: u8 = 0;
@@ -25,211 +28,232 @@ fn parse_input(input: &str) -> Vec<Tile> {
                     iter
                 })
                 .collect();
-            Tile { id, data }
+            Tile {
+                id,
+                data,
+                size: t.lines().nth(1).unwrap().chars().count() as u8,
+            }
         })
         .collect()
 }
 
 #[aoc(day20, part1)]
-fn part1(input: &[Tile]) -> u128 {
-    // find all tiles that have exactly two borders not matching any other tiles
-    let corners: Vec<Tile> = input
+fn part1(input: &[Tile]) -> u64 {
+    input
         .iter()
         .filter(|t| {
-            let cnt = t
-                .borders()
+            let count_of_neighbors = input
                 .iter()
-                .filter(|b| {
-                    for tile in input {
-                        if tile.id == t.id {
-                            continue;
-                        }
-                        if tile.borders().contains(b) {
-                            return false;
-                        }
-                    }
-                    true
+                .filter(|t2| {
+                    t.id != t2.id
+                        && (t.is_adjacent(t2.get_border(&Border::TOP))
+                            || t.is_adjacent(t2.get_border(&Border::BOTTOM))
+                            || t.is_adjacent(t2.get_border(&Border::LEFT))
+                            || t.is_adjacent(t2.get_border(&Border::RIGHT)))
                 })
                 .count();
-            cnt >= 4
+            count_of_neighbors == 2
         })
-        .cloned()
-        .collect();
-    println!("total corners: {} {:#?}", corners.len(), corners);
-    corners.iter().map(|tile| tile.id as u128).product()
+        .map(|t| t.id as u64)
+        .product()
+}
+
+fn borders_match(first: &[u8], second: &[u8]) -> bool {
+    let border1_set: HashSet<_> = first.iter().cloned().collect();
+    let border2_set: HashSet<_> = second.iter().cloned().collect();
+    border1_set == border2_set
 }
 
 #[derive(Debug, Clone)]
 pub struct Tile {
-    id: u32,
+    id: usize,
     data: Vec<(u8, u8)>,
+    size: u8,
+}
+enum Border {
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM,
 }
 
+// type Result<T> = std::result::Result<T, TileNotAdjacentError>;
+#[derive(Debug, Clone)]
+struct TileNotAdjacentError;
+
 impl Tile {
-    pub fn borders(&self) -> [u16; 8] {
-        let base: u16 = 2;
-        let top: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.1 == 0)
-            .map(|c| base.pow(c.0 as u32))
-            .sum();
-        let bottom: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.1 == 9)
-            .map(|c| base.pow(c.0 as u32))
-            .sum();
-        let left: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.0 == 0)
-            .map(|c| base.pow(c.1 as u32))
-            .sum();
-        let right: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.0 == 9)
-            .map(|c| base.pow(c.1 as u32))
-            .sum();
-        let top_2: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.1 == 0)
-            .map(|c| base.pow(9 - c.0 as u32))
-            .sum();
-        let bottom_2: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.1 == 9)
-            .map(|c| base.pow(9 - c.0 as u32))
-            .sum();
-        let left_2: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.0 == 0)
-            .map(|c| base.pow(9 - c.1 as u32))
-            .sum();
-        let right_2: u16 = self
-            .data
-            .iter()
-            .filter(|c| c.0 == 9)
-            .map(|c| base.pow(9 - c.1 as u32))
-            .sum();
-        [top, top_2, bottom, bottom_2, left, left_2, right, right_2]
+    fn get_border(&self, border: &Border) -> Vec<u8> {
+        match border {
+            Border::TOP => self
+                .data
+                .iter()
+                .filter(|(_, y)| *y == 0)
+                .map(|(x, _)| *x)
+                .collect(),
+            Border::BOTTOM => self
+                .data
+                .iter()
+                .filter(|(_, y)| *y == self.size - 1 as u8)
+                .map(|(x, _)| *x)
+                .collect(),
+            Border::LEFT => self
+                .data
+                .iter()
+                .filter(|(x, _)| *x == 0)
+                .map(|(_, y)| *y)
+                .collect(),
+            Border::RIGHT => self
+                .data
+                .iter()
+                .filter(|(x, _)| *x == self.size - 1)
+                .map(|(_, y)| *y)
+                .collect()
+        }
+    }
+
+    /// Mutates tile (by rotating, flipping) to match given border and orientation
+    fn line_up(&mut self, border: Vec<u8>, side: Border) -> Result<(), TileNotAdjacentError> {
+        for _ in 0..4 {
+            if borders_match(&self.get_border(&side), &border) {
+                return Ok(());
+            }
+            self.rotate();
+        }
+        println!("Flipping horizontally...");
+        self.flip();
+        for _ in 0..4 {
+            if borders_match(&self.get_border(&side), &border) {
+                return Ok(());
+            }
+            self.rotate();
+        }
+        Err(TileNotAdjacentError)
+    }
+
+    /// Returns true is tile matches given border at any side or orientation, false otherwise
+    fn is_adjacent(&self, border: Vec<u8>) -> bool {
+        for side in [Border::LEFT, Border::RIGHT, Border::TOP, Border::BOTTOM].iter() {
+            let b = self.get_border(side);
+            if borders_match(&b, &border) {
+                return true;
+            } else {
+                //try reversing
+                let reversed: Vec<u8> = b.iter().map(|i| self.size - 1 - *i).collect();
+                if borders_match(&reversed, &border) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn flip(&mut self) {
+        let mut new_state: Vec<(u8, u8)> = Vec::new();
+        for pixels in &self.data {
+            new_state.push((pixels.0, 9 - pixels.1));
+        }
+        self.data = new_state;
+    }
+
+    fn rotate(&mut self) {
+        let mut new_state: Vec<(u8, u8)> = Vec::new();
+        for pixels in &self.data {
+            new_state.push((9 - pixels.1, pixels.0));
+        }
+        self.data = new_state;
     }
 }
 
-#[test]
-fn test_input_parsing() {
-    let test_input = "Tile 2311:
-..##.#..#.
-##..#.....
-#...##..#.
-####.#...#
-##.##.###.
-##...#.###
-.#.#.#..##
-..#....#..
-###...#.#.
-..###..###
+impl fmt::Display for Tile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut pretty: String = String::new();
+        for y in 0..self.size {
+            for x in 0..self.size {
+                if self.data.contains(&(x, y)) {
+                    pretty.push_str("#");
+                } else {
+                    pretty.push_str(".");
+                }
+            }
+            pretty.push_str("\n");
+        }
+        write!(f, "{}", pretty)
+    }
+}
 
-Tile 1951:
-#.##...##.
-#.####...#
-.....#..##
-#...######
-.##.#....#
-.###.#####
-###.##.##.
-.###....#.
-..#.#..#.#
-#...##.#..
+#[cfg(test)]
+mod tests {
+    use super::{parse_input, part1, Border};
+    use std::fs;
+    #[test]
+    fn test_input_parsing() {
+        let input =
+            fs::read_to_string("input/2020/day20_sample_input.txt").expect("Could not read file");
+        let tiles = parse_input(input.as_str());
+        assert_eq!(9, tiles.len());
+        assert_eq!(10, tiles[0].size);
+        assert_eq!(20899048083289, part1(&tiles));
+    }
 
-Tile 1171:
-####...##.
-#..##.#..#
-##.#..#.#.
-.###.####.
-..###.####
-.##....##.
-.#...####.
-#.##.####.
-####..#...
-.....##...
+    #[test]
+    fn test_rearranging_tiles() {
+        let input =
+            fs::read_to_string("input/2020/day20_sample_input.txt").expect("Could not read file");
+        let tiles = parse_input(input.as_str());
+        let id1 = 1951;
+        let id2 = 2311;
+        let mut t1 = tiles
+            .iter()
+            .find(|t| t.id == id1)
+            .expect("No matching tiles found")
+            .clone();
+        let mut t2 = tiles
+            .iter()
+            .find(|t| t.id == id2)
+            .expect("No matching tiles found")
+            .clone();
+        assert!(t2.is_adjacent(t1.get_border(&Border::RIGHT)));
+        t1.flip();
+        // should still work
+        assert!(t2.is_adjacent(t1.get_border(&Border::RIGHT)));
+        t2.flip();
+        assert!(t2.is_adjacent(t1.get_border(&Border::RIGHT)));
+        // now let's try lining up
+        t2.rotate();
+        println!("BEFORE:");
+        println!("{}", t1);
+        println!("{}", t2);
+        t2.line_up(t1.get_border(&Border::RIGHT), Border::LEFT);
+        println!("AFTER:");
+        println!("{}", t1);
+        println!("{}", t2);
+        assert_eq!(t1.get_border(&Border::RIGHT), t2.get_border(&Border::LEFT));
 
-Tile 1427:
-###.##.#..
-.#..#.##..
-.#.##.#..#
-#.#.#.##.#
-....#...##
-...##..##.
-...#.#####
-.#.####.#.
-..#..###.#
-..##.#..#.
+        let id3 = 2729;
+        let mut t3 = tiles
+            .iter()
+            .find(|t| t.id == id3)
+            .expect("No matching tiles found")
+            .clone();
+        println!("{}", t3);
+        assert!(t3.is_adjacent(t1.get_border(&Border::BOTTOM)));
+        t3.line_up(t1.get_border(&Border::BOTTOM), Border::TOP);
+        println!("{}", t3);
 
-Tile 1489:
-##.#.#....
-..##...#..
-.##..##...
-..#...#...
-#####...#.
-#..#.#.#.#
-...#.#.#..
-##.#...##.
-..##.##.##
-###.##.#..
-
-Tile 2473:
-#....####.
-#..#.##...
-#.##..#...
-######.#.#
-.#...#.#.#
-.#########
-.###.#..#.
-########.#
-##...##.#.
-..###.#.#.
-
-Tile 2971:
-..#.#....#
-#...###...
-#.#.###...
-##.##..#..
-.#####..##
-.#..####.#
-#..#.#..#.
-..####.###
-..#.#.###.
-...#.#.#.#
-
-Tile 2729:
-...#.#.#.#
-####.#....
-..#.#.....
-....#..#.#
-.##..##.#.
-.#.####...
-####.#.#..
-##.####...
-##..#.##..
-#.##...##.
-
-Tile 3079:
-#.#.#####.
-.#..######
-..#.......
-######....
-####.#..#.
-.#...#.##.
-#.#####.##
-..#.###...
-..#.......
-..#.###...";
-    let tiles = parse_input(test_input);
-    assert_eq!(9, tiles.len());
-    assert_eq!(20899048083289, part1(&parse_input(test_input)));
+        let id4 = 3079;
+        let mut t4 = tiles
+            .iter()
+            .find(|t| t.id == id4)
+            .expect("No matching tiles found")
+            .clone();
+        println!("3079: {}", t4);
+        println!("{}", t2);
+        assert!(t4.is_adjacent(t2.get_border(&Border::RIGHT)));
+        let result = t4.line_up(t2.get_border(&Border::RIGHT), Border::LEFT);
+        match result {
+            Ok(_) => assert!(true),
+            Err(_) => assert!(false),
+        }
+        println!("{}", t4);
+    }
 }
