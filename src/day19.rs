@@ -30,7 +30,7 @@ fn parse_input_part2(input: &str) -> usize {
     // Not proud of this, but could not figure out hot to do a regex for ab|aabb|aaabbb...basically same num of times
     let mut nested = String::from("(");
     for i in 1..5 {
-        nested.push_str("(");
+        nested.push('(');
         for _ in 0..i {
             nested.push_str(&rule_42_expanded);
         }
@@ -40,10 +40,10 @@ fn parse_input_part2(input: &str) -> usize {
         if i < 4 {
             nested.push_str(")|");
         } else {
-            nested.push_str(")")
+            nested.push(')')
         }
     }
-    nested.push_str(")");
+    nested.push(')');
 
     let re: Regex = Regex::new(&format!("^{0}+{1}$", rule_42_expanded, nested)).unwrap();
     messages.lines().filter(|l| re.is_match(l)).count()

@@ -29,7 +29,7 @@ fn eval_helper(ex: &str) -> u64 {
     }
 
     if tokens.len() > 3 {
-        new_ex.push_str(" ");
+        new_ex.push(' ');
         new_ex.push_str(&tokens[3..].join(" "));
     }
     eval_helper(&new_ex)
