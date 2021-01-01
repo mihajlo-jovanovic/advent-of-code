@@ -86,7 +86,10 @@ impl CrabCups {
         }
         // insert to the right of destination
         for (i, cup) in pick_up.into_iter().enumerate() {
-            self.cups.insert((self.destination_cup_idx(dest)+i+1) % self.cups.len(), cup);
+            self.cups.insert(
+                (self.destination_cup_idx(dest) + i + 1) % self.cups.len(),
+                cup,
+            );
         }
         // finally, set new current cup
         self.current_cup = self.cups[(self.current_cup_idx() + 1) % self.cups.len()];
@@ -113,13 +116,18 @@ impl CrabCups {
 
     fn get_labels_part2(&self) -> u64 {
         let pos = self
-        .cups
-        .iter()
-        .position(|c| *c == 1)
-        .expect("Cup with label of 1 not found");
+            .cups
+            .iter()
+            .position(|c| *c == 1)
+            .expect("Cup with label of 1 not found");
         println!("pos of cup labeled 1: {}", pos);
-        println!("two numbers to the right: {}  {}", self.cups[(pos+1)%self.cups.len()], self.cups[(pos+2)%self.cups.len()]);
-        (self.cups[(pos+1)%self.cups.len()] as u64) * (self.cups[(pos+2)%self.cups.len()] as u64)
+        println!(
+            "two numbers to the right: {}  {}",
+            self.cups[(pos + 1) % self.cups.len()],
+            self.cups[(pos + 2) % self.cups.len()]
+        );
+        (self.cups[(pos + 1) % self.cups.len()] as u64)
+            * (self.cups[(pos + 2) % self.cups.len()] as u64)
     }
 }
 

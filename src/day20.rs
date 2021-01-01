@@ -1,8 +1,8 @@
+use itertools::any;
 use num::integer::Roots;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fmt;
-use itertools::any;
 
 #[aoc_generator(day20)]
 fn parse_input(input: &str) -> Vec<Tile> {
@@ -88,14 +88,14 @@ fn assemble_image(tiles: &[Tile]) -> Vec<(u8, u8)> {
                 .find(|tile| tile.id != top.id && tile.is_adjacent(top.get_border(&Border::LEFT)));
             while neighbor.is_some() {
                 top.rotate();
-                neighbor = tiles
-                    .iter()
-                    .find(|tile| {
-                        tile.id != top.id && tile.is_adjacent(top.get_border(&Border::LEFT))
-                    });
+                neighbor = tiles.iter().find(|tile| {
+                    tile.id != top.id && tile.is_adjacent(top.get_border(&Border::LEFT))
+                });
             }
-            if any(tiles, |tile| tile.id != top.id && tile.is_adjacent(top.get_border(&Border::TOP)))
-            {
+            let any_neighbors_up_top: bool = any(tiles, |tile| {
+                tile.id != top.id && tile.is_adjacent(top.get_border(&Border::TOP))
+            });
+            if any_neighbors_up_top {
                 top.flip();
             }
             //let &mut row = img.get(0).unwrap();
@@ -118,8 +118,8 @@ fn assemble_image(tiles: &[Tile]) -> Vec<(u8, u8)> {
             {
                 let mut piece = jigsaw_piece.clone();
                 match piece.line_up(top.get_border(&Border::BOTTOM), Border::TOP) {
-                    Ok(_) => { },
-                    _ => panic!("Could not line up tile along top border")
+                    Ok(_) => {}
+                    _ => panic!("Could not line up tile along top border"),
                 }
                 print!("{}", piece.id);
                 let row: u8 = (i / row_size).try_into().unwrap();
@@ -141,8 +141,8 @@ fn assemble_image(tiles: &[Tile]) -> Vec<(u8, u8)> {
             }) {
                 let mut piece = jigsaw_piece.clone();
                 match piece.line_up(left.get_border(&Border::RIGHT), Border::LEFT) {
-                    Ok(_) => {},
-                    _ => panic!("Could not line up tile along left border")
+                    Ok(_) => {}
+                    _ => panic!("Could not line up tile along left border"),
                 }
                 print!("{}", piece.id);
                 if piece.id == 2311 {

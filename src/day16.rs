@@ -1,79 +1,104 @@
-use std::collections::HashSet;
-
 #[aoc_generator(day16)]
-fn parse_input(input: &str) -> (Vec<u32>, HashSet<u32>) {
+fn parse_input(input: &str) -> (Vec<Field>, Vec<Vec<u32>>) {
     let mut groups = input.split("\n\n");
-    let fields = groups.next().unwrap();
-    //let mut ranges:  = HashSet::new();
-    let mut set: HashSet<u32> = HashSet::new();
-    for l in fields.lines() {
-        let mut beg: u32;
-        let mut end: u32;
-        for i in l[l.find(": ").unwrap() + 2..].split(" or ") {
-            beg = i[0..i.find('-').unwrap()].parse().unwrap();
-            end = i[i.find('-').unwrap() + 1..].parse().unwrap();
-            for num in beg..end + 1 {
-                set.insert(num);
-            }
+    if let Some(fields) = groups.next() {
+        let fields: Vec<Field> = fields.lines().map(|l| Field::new(l)).collect();
+        if let Some(tics) = groups.nth(1) {
+            let tickets: Vec<Vec<u32>> = tics
+                .lines()
+                .skip(1)
+                .map(|l| l.split(',').map(|n| n.parse::<u32>().unwrap()).collect())
+                .collect();
+            (fields, tickets)
+        } else {
+            panic!("Invalid input file format")
         }
+    } else {
+        panic!("Invalid input file format")
     }
-
-    // let ranges: Vec<u32> = fields.lines().flat_map(|l| {
-    //     let mut beg: u32 = 0;
-    //     let mut end: u32 = 0;
-    //     for i in l[l.find(": ").unwrap()+2..].split(" or ") {
-    //         //println!("{:?}", i);
-    //         beg = i[0..i.find('-').unwrap()].parse().unwrap();
-    //         end = i[i.find('-').unwrap()+1..].parse().unwrap();
-    //         println!("{:?} {:?}", beg, end);
-    //         //let rng = (beg..end);
-    //         //ranges.extend(rng);
-    //     }
-    //     (beg..end+1)
-    //     //1
-    // }).collect();
-    groups.next();
-    let numbers = groups.next().unwrap().lines().skip(1);
-    let mut tmp: Vec<u32> = Vec::new();
-    for l in numbers {
-        println!("{:?}", l);
-        for n in l.split(',') {
-            tmp.push(n.parse().unwrap());
-        }
-    }
-    (tmp, set)
 }
 
 #[aoc(day16, part1)]
-fn part1(input: &(Vec<u32>, HashSet<u32>)) -> u32 {
-    println!("set is {:#?}", input.1);
-    println!(
-        "{:#?}",
-        input
-            .0
-            .iter()
-            .filter(|n| !input.1.contains(n))
-            .cloned()
-            .collect::<Vec<u32>>()
-    );
-    input.0.iter().filter(|n| !input.1.contains(n)).sum()
+fn part1(input: &(Vec<Field>, Vec<Vec<u32>>)) -> u32 {
+    input
+        .1
+        .iter()
+        .flat_map(|tic| {
+            tic.iter().filter(|t| {
+                for f in &input.0 {
+                    if f.is_valid(**t) {
+                        return false;
+                    }
+                }
+                true
+            })
+        })
+        .sum()
 }
 
-#[test]
-fn test_part1() {
-    let test_input = parse_input(
-        "class: 1-3 or 5-7
-row: 6-11 or 33-44
-seat: 13-40 or 45-50
+#[derive(Debug)]
+struct Field {
+    name: String,
+    valid_range_1: (u32, u32),
+    valid_range_2: (u32, u32),
+}
 
-your ticket:
-7,1,14
+impl Field {
+    fn new(f: &str) -> Field {
+        if let Some(colon) = f.find(':') {
+            let name: &str = &f[0..colon];
+            let ranges: Vec<(u32, u32)> = f[colon + 2..]
+                .split(" or ")
+                .map(|s| {
+                    if let Some(hyphen) = s.find('-') {
+                        let valid_range: (u32, u32) = (
+                            s[0..hyphen].parse().unwrap(),
+                            s[hyphen + 1..].parse().unwrap(),
+                        );
+                        valid_range
+                    } else {
+                        panic!("Invalid field range")
+                    }
+                })
+                .collect();
+            Field {
+                name: name.to_string(),
+                valid_range_1: ranges[0],
+                valid_range_2: ranges[1],
+            }
+        } else {
+            panic!("Invalid field format")
+        }
+    }
 
-nearby tickets:
-7,3,47
-40,4,50
-55,2,20
-38,6,12",
-    );
-    assert_eq!(71, part1(&test_input));
+    fn is_valid(&self, val: u32) -> bool {
+        val >= self.valid_range_1.0 && val <= self.valid_range_1.1
+            || val >= self.valid_range_2.0 && val <= self.valid_range_2.1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_input, part1, Field};
+    use std::fs;
+
+    #[test]
+    fn test_part1() {
+        let input =
+            fs::read_to_string("input/2020/day16_sample_input.txt").expect("Could not read file");
+        let test_input = parse_input(input.as_str());
+        assert_eq!(71, part1(&test_input));
+    }
+
+    #[test]
+    fn playing_with_fields() {
+        let f1 = Field::new("departure location: 49-627 or 650-970");
+        assert_eq!("departure location", f1.name);
+        assert_eq!((49, 627), f1.valid_range_1);
+        println!("{:?}", f1);
+        assert!(f1.is_valid(49));
+        assert!(f1.is_valid(50));
+        assert!(f1.is_valid(970));
+        assert!(!f1.is_valid(971));
+    }
 }

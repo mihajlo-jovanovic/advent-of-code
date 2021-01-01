@@ -43,13 +43,13 @@ fn part1(input: &[(char, i32)]) -> i32 {
 
 #[aoc(day12, part2)]
 fn part2(input: &[(char, i32)]) -> i32 {
-    let mut waypoint: (i32,i32) = (1,10);
-    let mut ship: (i32, i32) = (0,0);
+    let mut waypoint: (i32, i32) = (1, 10);
+    let mut ship: (i32, i32) = (0, 0);
     for (dir, steps) in input {
         match dir {
             'N' => waypoint = (waypoint.0 + steps, waypoint.1),
             'S' => waypoint = (waypoint.0 - steps, waypoint.1),
-            'E' => waypoint = (waypoint.0,  waypoint.1 + steps),
+            'E' => waypoint = (waypoint.0, waypoint.1 + steps),
             'W' => waypoint = (waypoint.0, waypoint.1 - steps),
             'R' if *steps == 90 => waypoint = (-waypoint.1, waypoint.0),
             'R' if *steps == 180 => waypoint = (-waypoint.0, -waypoint.1),
@@ -58,7 +58,7 @@ fn part2(input: &[(char, i32)]) -> i32 {
             'L' if *steps == 180 => waypoint = (-waypoint.0, -waypoint.1),
             'L' if *steps == 90 => waypoint = (waypoint.1, -waypoint.0),
             'F' => ship = (ship.0 + waypoint.0 * steps, ship.1 + waypoint.1 * steps),
-            _ => panic!("Ups something went wrong")
+            _ => panic!("Ups something went wrong"),
         }
         println!("waypoint: {:?} ship's position: {:?}", waypoint, ship);
     }
