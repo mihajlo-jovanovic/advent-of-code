@@ -254,7 +254,7 @@ impl Tile {
             Border::BOTTOM => self
                 .data
                 .iter()
-                .filter(|(_, y)| *y == self.size - 1 as u8)
+                .filter(|(_, y)| *y == self.size - 1_u8)
                 .map(|(x, _)| *x)
                 .collect(),
             Border::LEFT => self

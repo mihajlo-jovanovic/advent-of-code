@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::iter::FromIterator;
 
 #[aoc_generator(day23)]
 fn parse_input(input: &str) -> Vec<u32> {
@@ -40,7 +39,7 @@ pub struct CrabCups {
 impl CrabCups {
     pub fn new(cups: &[u32], current_cup: u32) -> CrabCups {
         CrabCups {
-            cups: VecDeque::from_iter(cups.iter().copied()),
+            cups: cups.iter().copied().collect(),
             current_cup,
             max_lbl: *cups.iter().max().unwrap(),
         }

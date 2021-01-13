@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
-use std::iter::FromIterator;
 
 #[aoc_generator(day21)]
 fn parse_input(input: &str) -> Vec<(HashSet<String>, HashSet<String>)> {
@@ -12,12 +11,11 @@ fn parse_input(input: &str) -> Vec<(HashSet<String>, HashSet<String>)> {
             let ingredients = parts.next().unwrap();
             let allergens = parts.next().unwrap();
             (
-                HashSet::from_iter(ingredients.split(' ').map(|s| s.to_owned())),
-                HashSet::from_iter(
-                    allergens[0..allergens.len() - 1]
-                        .split(", ")
-                        .map(|s| s.to_owned()),
-                ),
+                ingredients.split(' ').map(|s| s.to_owned()).collect(),
+                allergens[0..allergens.len() - 1]
+                    .split(", ")
+                    .map(|s| s.to_owned())
+                    .collect(),
             )
         })
         .collect()
@@ -40,14 +38,13 @@ fn can_contain_any_allergens(
     ingredient: &str,
     foods: &[(HashSet<String>, HashSet<String>)],
 ) -> bool {
-    let allergens_unique: HashSet<String> = HashSet::from_iter(
-        foods
-            .iter()
-            .filter(|f| f.0.contains(ingredient))
-            .flat_map(|f| &f.1)
-            .unique()
-            .cloned(),
-    );
+    let allergens_unique: HashSet<String> = foods
+        .iter()
+        .filter(|f| f.0.contains(ingredient))
+        .flat_map(|f| &f.1)
+        .unique()
+        .cloned()
+        .collect();
     for allergen in allergens_unique {
         //find all foods that list this allergen; ingredient must be present in at least one
         for f in foods.iter().filter(|f| f.1.contains(&allergen)) {
