@@ -19,7 +19,7 @@ fn part2(input: &[i32]) -> i32 {
     let mut acc: HashSet<i32> = HashSet::new();
     acc.insert(0);
     let result: i32 = input
-        .into_iter()
+        .iter()
         .cycle()
         .scan(0, |state, &x| {
             *state += x;
