@@ -24,3 +24,4 @@ pom.xml.asc
 .vscode/
 .idea
 >>>>>>> aoc-2020/main
+.DS_Store
