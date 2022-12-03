@@ -16,7 +16,7 @@ fn priority(item: char) -> usize {
 }
 
 fn common(rucksacks: Vec<&str>) -> char {
-    *rucksacks
+    rucksacks
         .into_iter()
         .map(|s| s.to_owned())
         .reduce(|r1, r2| {
@@ -26,8 +26,7 @@ fn common(rucksacks: Vec<&str>) -> char {
         })
         .unwrap()
         .chars()
-        .collect::<Vec<char>>()
-        .first()
+        .next()
         .unwrap()
 }
 
@@ -46,7 +45,7 @@ fn part1(input: &[String]) -> usize {
 fn part2(input: &[String]) -> usize {
     input
         .chunks(3)
-        .map(|s| priority(common(s.iter().map(|l| l as &str).collect())))
+        .map(|s| priority(common(s.iter().map(|s| s as &str).collect())))
         .sum()
 }
 
