@@ -5,6 +5,7 @@ extern crate aoc_runner_derive;
 extern crate core;
 
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
