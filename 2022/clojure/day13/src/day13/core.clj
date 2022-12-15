@@ -43,7 +43,7 @@
                       false)))))
 
 (defn -main [& _]
-  (let [input (-> "sample.txt"
+  (let [input (-> "day13.txt"
                   io/resource
                   slurp)
         tokens (str/split input #"\n\n")
