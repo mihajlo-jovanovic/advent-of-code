@@ -22,49 +22,49 @@
 ;      2 [(to3 (quot (op3 i) 3)) (quot (op3 i) 3)]
 ;      3 [(to4 (quot (op4 i) 3)) (quot (op4 i) 3)])))
 
-;(defn monkey-throw [m i]
-;  (let [op1 #(* % 19)
-;        to #(if (divisible? %1 %4) %2 %3)
-;        to1 (partial to 23 2 3)
-;        op2 #(+ % 6)
-;        to2 (partial to 19 2 0)
-;        op3 #(* % %)
-;        to3 (partial to 13 1 3)
-;        op4 #(+ % 3)
-;        to4 (partial to 17 0 1)]
-;    (case m
-;      0 [(to1 (op1 i)) (op1 i)]
-;      1 [(to2 (op2 i)) (op2 i)]
-;      2 [(to3 (op3 i)) (op3 i)]
-;      3 [(to4 (op4 i)) (op4 i)])))
-
 (defn monkey-throw [m i]
-  (let [op1 #(* % 5)
+  (let [op1 #(* % 19)
         to #(if (divisible? %1 %4) %2 %3)
-        to1 (partial to 2 2 1)
-        op2 #(* % %)
-        to2 (partial to 7 3 6)
-        op3 #(+ % 1)
+        to1 (partial to 23 2 3)
+        op2 #(+ % 6)
+        to2 (partial to 19 2 0)
+        op3 #(* % %)
         to3 (partial to 13 1 3)
-        op4 #(+ % 6)
-        to4 (partial to 3 6 4)
-        op5 #(* % 17)
-        to5 (partial to 19 7 5)
-        op6 #(+ % 8)
-        to6 (partial to 5 0 2)
-        op7 #(+ % 7)
-        to7 (partial to 11 7 4)
-        op8 #(+ % 5)
-        to8 (partial to 17 5 0)]
+        op4 #(+ % 3)
+        to4 (partial to 17 0 1)]
     (case m
-      0 [(to1 (quot (op1 i) 3)) (quot (op1 i) 3)]
-      1 [(to2 (quot (op2 i) 3)) (quot (op2 i) 3)]
-      2 [(to3 (quot (op3 i) 3)) (quot (op3 i) 3)]
-      3 [(to4 (quot (op4 i) 3)) (quot (op4 i) 3)]
-      4 [(to5 (quot (op5 i) 3)) (quot (op5 i) 3)]
-      5 [(to6 (quot (op6 i) 3)) (quot (op6 i) 3)]
-      6 [(to7 (quot (op7 i) 3)) (quot (op7 i) 3)]
-      7 [(to8 (quot (op8 i) 3)) (quot (op8 i) 3)])))
+      0 [(to1 (op1 i)) (op1 i)]
+      1 [(to2 (op2 i)) (op2 i)]
+      2 [(to3 (op3 i)) (op3 i)]
+      3 [(to4 (op4 i)) (op4 i)])))
+
+;(defn monkey-throw [m i]
+;  (let [op1 #(* % 5)
+;        to #(if (divisible? %1 %4) %2 %3)
+;        to1 (partial to 2 2 1)
+;        op2 #(* % %)
+;        to2 (partial to 7 3 6)
+;        op3 #(+ % 1)
+;        to3 (partial to 13 1 3)
+;        op4 #(+ % 6)
+;        to4 (partial to 3 6 4)
+;        op5 #(* % 17)
+;        to5 (partial to 19 7 5)
+;        op6 #(+ % 8)
+;        to6 (partial to 5 0 2)
+;        op7 #(+ % 7)
+;        to7 (partial to 11 7 4)
+;        op8 #(+ % 5)
+;        to8 (partial to 17 5 0)]
+;    (case m
+;      0 [(to1 (quot (op1 i) 3)) (quot (op1 i) 3)]
+;      1 [(to2 (quot (op2 i) 3)) (quot (op2 i) 3)]
+;      2 [(to3 (quot (op3 i) 3)) (quot (op3 i) 3)]
+;      3 [(to4 (quot (op4 i) 3)) (quot (op4 i) 3)]
+;      4 [(to5 (quot (op5 i) 3)) (quot (op5 i) 3)]
+;      5 [(to6 (quot (op6 i) 3)) (quot (op6 i) 3)]
+;      6 [(to7 (quot (op7 i) 3)) (quot (op7 i) 3)]
+;      7 [(to8 (quot (op8 i) 3)) (quot (op8 i) 3)])))
 
 (defn round-helper [coll m]
   (if (empty? (nth coll m))
@@ -83,7 +83,7 @@
             new-state (round-helper state m)]
         (recur new-state (inc m) (assoc result m (+ inspected (get result m))))))))
 
-
+(def s1 [79, 98])
 (def s2 [54, 65, 75, 74])
 (def s3 [79, 60, 97])
 (def s4 [74])
@@ -99,13 +99,13 @@
 
 (defn -main
   [& input]
-  (let [input [m1 m2 m3 m4 m5 m6 m7 m8]
+  (let [input [s1 s2 s3 s4]
         monkeys (count input)
         inspect-count (into (vector) (repeat monkeys 0))]
     (->> (take 21 (iterate round (vector input inspect-count)))
          (last)
          (second)
          (sort)
-         (drop 6)
+         (drop (- monkeys 2))
          (reduce *)
          (println "Part 1 solution: "))))
