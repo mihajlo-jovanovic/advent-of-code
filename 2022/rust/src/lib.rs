@@ -6,6 +6,7 @@ extern crate core;
 
 mod day1;
 mod day10;
+mod day12;
 mod day14;
 mod day2;
 mod day3;
