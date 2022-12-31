@@ -11,3 +11,7 @@ This one gave me some trouble...solved part 2 somewhat manually, by running part
 second time for the `Elephant`, making sure to use disjoint set of valves - basically excluding the ones that were
 opened during the first run). Unfortunately, the way I coded part 1 it was not easy to also list valves opened along 
 the winning route. Maybe someday I will go back and re-factor using Dynamic programming / memoization approach, but not likely...
+
+### Day 19
+
+TODO: write some notes about this one...
