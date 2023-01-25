@@ -1,32 +1,14 @@
-# day11
+# Adevnt of Code 2022 - Day 11
 
-FIXME: description
-
-## Installation
-
-Download from http://example.com/FIXME.
+This one took me a little while to get, bit was fun in the end. Someday I may return to write proper parsing of the 
+input...but not today.
 
 ## Usage
 
-FIXME: explanation
-
-    $ java -jar day11-0.1.0-standalone.jar [args]
-
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+```bash
+lein uberjar
+java -jar day11-0.1.0-standalone.jar
+```    
 
 ## License
 

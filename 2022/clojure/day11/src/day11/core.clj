@@ -6,106 +6,53 @@
   [div num]
   (zero? (mod num div)))
 
-;(defn monkey-throw [m i]
-;  (let [op1 #(* % 19)
-;        to #(if (divisible? %1 %4) %2 %3)
-;        to1 (partial to 23 2 3)
-;        op2 #(+ % 6)
-;        to2 (partial to 19 2 0)
-;        op3 #(* % %)
-;        to3 (partial to 13 1 3)
-;        op4 #(+ % 3)
-;        to4 (partial to 17 0 1)]
-;    (case m
-;      0 [(to1 (quot (op1 i) 3)) (quot (op1 i) 3)]
-;      1 [(to2 (quot (op2 i) 3)) (quot (op2 i) 3)]
-;      2 [(to3 (quot (op3 i) 3)) (quot (op3 i) 3)]
-;      3 [(to4 (quot (op4 i) 3)) (quot (op4 i) 3)])))
+(defn turn [coll i]
+  "Perform single monkey's turn - throwing all of its items"
+  (let [m (coll i)
+        prd (* 2 3 5 7 11 13 17 19)]
+    (loop [items (:items m)
+           agg coll]
+      (if (empty? items)
+        agg
+        (let [item (mod ((:op m) (first items)) prd)
+              throw-to ((:pred m) item)
+              tmp (update-in agg [throw-to :items] #(vec (conj % item)))]
+          (recur (rest items) (update-in tmp [i :items] rest)))))))
 
-(defn monkey-throw [m i]
-  (let [op1 #(* % 19)
-        to #(if (divisible? %1 %4) %2 %3)
-        to1 (partial to 23 2 3)
-        op2 #(+ % 6)
-        to2 (partial to 19 2 0)
-        op3 #(* % %)
-        to3 (partial to 13 1 3)
-        op4 #(+ % 3)
-        to4 (partial to 17 0 1)]
-    (case m
-      0 [(to1 (op1 i)) (op1 i)]
-      1 [(to2 (op2 i)) (op2 i)]
-      2 [(to3 (op3 i)) (op3 i)]
-      3 [(to4 (op4 i)) (op4 i)])))
+(defn round [{:keys [monkeys inspect-count]}]
+  (loop [m monkeys
+         i 0
+         counters inspect-count]
+    (if (= i (count m))
+      {:monkeys m :inspect-count counters}
+      (let [num-of-items (count (:items (m i)))]
+        (recur (turn m i) (inc i) (update counters i (partial + num-of-items)))))))
 
-;(defn monkey-throw [m i]
-;  (let [op1 #(* % 5)
-;        to #(if (divisible? %1 %4) %2 %3)
-;        to1 (partial to 2 2 1)
-;        op2 #(* % %)
-;        to2 (partial to 7 3 6)
-;        op3 #(+ % 1)
-;        to3 (partial to 13 1 3)
-;        op4 #(+ % 6)
-;        to4 (partial to 3 6 4)
-;        op5 #(* % 17)
-;        to5 (partial to 19 7 5)
-;        op6 #(+ % 8)
-;        to6 (partial to 5 0 2)
-;        op7 #(+ % 7)
-;        to7 (partial to 11 7 4)
-;        op8 #(+ % 5)
-;        to8 (partial to 17 5 0)]
-;    (case m
-;      0 [(to1 (quot (op1 i) 3)) (quot (op1 i) 3)]
-;      1 [(to2 (quot (op2 i) 3)) (quot (op2 i) 3)]
-;      2 [(to3 (quot (op3 i) 3)) (quot (op3 i) 3)]
-;      3 [(to4 (quot (op4 i) 3)) (quot (op4 i) 3)]
-;      4 [(to5 (quot (op5 i) 3)) (quot (op5 i) 3)]
-;      5 [(to6 (quot (op6 i) 3)) (quot (op6 i) 3)]
-;      6 [(to7 (quot (op7 i) 3)) (quot (op7 i) 3)]
-;      7 [(to8 (quot (op8 i) 3)) (quot (op8 i) 3)])))
-
-(defn round-helper [coll m]
-  (if (empty? (nth coll m))
-    coll
-    (let [items (nth coll m)
-          [m2 w] (monkey-throw m (first items))]
-      (round-helper (assoc coll m (vec (rest (nth coll m))) m2 (conj (nth coll m2) w)) m))))
-
-(defn round [coll]
-  (loop [state (first coll)
-         m 0
-         result (second coll)]
-    (if (= m (count state))
-      (vector state result)
-      (let [inspected (count (nth state m))
-            new-state (round-helper state m)]
-        (recur new-state (inc m) (assoc result m (+ inspected (get result m))))))))
-
-(def s1 [79, 98])
-(def s2 [54, 65, 75, 74])
-(def s3 [79, 60, 97])
-(def s4 [74])
-
-(def m1 [50, 70, 89, 75, 66, 66])
-(def m2 [85])
-(def m3 [66, 51, 71, 76, 58, 55, 58, 60])
-(def m4 [79, 52, 55, 51])
-(def m5 [69, 92])
-(def m6 [71, 76, 73, 98, 67, 79, 99])
-(def m7 [82, 76, 69, 69, 57])
-(def m8 [65, 79, 86])
+(defn monkey [coll op pred]
+  {:items coll :op op :pred pred})
+;(def m1 (monkey [79, 98] #(* % 19) #(if (divisible? 23 %) 2 3)))
+;(def m2 (monkey [54, 65, 75, 74] #(+ % 6) #(if (divisible? 19 %) 2 0)))
+;(def m3 (monkey [79, 60, 97] #(* % %) #(if (divisible? 13 %) 1 3)))
+;(def m4 (monkey [74] #(+ % 3) #(if (divisible? 17 %) 0 1)))
+;(def monkeys [m1 m2 m3 m4])
+(def m1 (monkey [50, 70, 89, 75, 66, 66] #(* % 5) #(if (divisible? 2 %) 2 1)))
+(def m2 (monkey [85] #(* % %) #(if (divisible? 7 %) 3 6)))
+(def m3 (monkey [66, 51, 71, 76, 58, 55, 58, 60] #(inc %) #(if (divisible? 13 %) 1 3)))
+(def m4 (monkey [79, 52, 55, 51] #(+ % 6) #(if (divisible? 3 %) 6 4)))
+(def m5 (monkey [69, 92] #(* % 17) #(if (divisible? 19 %) 7 5)))
+(def m6 (monkey [71, 76, 73, 98, 67, 79, 99] #(+ % 8) #(if (divisible? 5 %) 0 2)))
+(def m7 (monkey [82, 76, 69, 69, 57] #(+ % 7) #(if (divisible? 11 %) 7 4)))
+(def m8 (monkey [65, 79, 86] #(+ % 5) #(if (divisible? 17 %) 5 0)))
+(def monkeys [m1 m2 m3 m4 m5 m6 m7 m8])
+(defn monkey [coll op pred]
+  {:items coll :op op :pred pred})
 
 (defn -main
-  [& input]
-  (let [input [s1 s2 s3 s4]
-        monkeys (count input)
-        inspect-count (into (vector) (repeat monkeys 0))]
-    (->> (take 21 (iterate round (vector input inspect-count)))
-         (last)
-         (second)
-         (sort)
-         (drop (- monkeys 2))
-         (reduce *)
-         (println "Part 1 solution: "))))
+  [& _]
+  (->> (take 10001 (iterate round {:monkeys monkeys :inspect-count [0 0 0 0 0 0 0 0]}))
+       (last)
+       (:inspect-count)
+       (sort)
+       (drop (- (count monkeys) 2))
+       (reduce *)
+       (println)))
