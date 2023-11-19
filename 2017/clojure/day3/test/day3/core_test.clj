@@ -2,6 +2,10 @@
   (:require [clojure.test :refer :all]
             [day3.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest p1-test
+  (testing "part 1"
+    (is (= 326 (p1)))))
+
+(deftest p2-test
+  (testing "part 2"
+    (is (= 363010 (p2)))))
