@@ -42,6 +42,43 @@ fn test_find_first_occurrence_in_str() {
     assert_eq!(9, find_first_occurrence_in_str("nine1", NUMBERS));
 }
 
+#[test]
+fn test_find_numbers() {
+    assert_eq!(vec!((3, 1)), find_numbers("two1nine"));
+    assert_eq!(vec!((0, 1), (4, 2)), find_numbers("1abc2"));
+    assert_eq!(vec!((3, 3), (7, 8)), find_numbers("pqr3stu8vwx"));
+    assert_eq!(vec!((1, 1), (3, 2), (5, 3), (7, 4), (9, 5)), find_numbers("a1b2c3d4e5f"));
+    assert_eq!(vec!((4, 7)), find_numbers("treb7uchet"))
+}
+
+fn find_numbers(string: &str) -> Vec<(usize, usize)> {
+
+    string.to_string()
+        .chars()
+        .enumerate()
+        .filter(|(_, c)| c.is_ascii_digit())
+        .map(|(i, c)| (i, c.to_digit(10).unwrap() as usize)).collect()
+
+    //vec!((0,2),(3,1),(4,9))
+}
+
+fn find_digits_spelled_out(string: &str) -> Vec<(usize, usize)> {
+    let nums = [
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    ];
+    nums.iter().enumerate().flat_map(|(i, s)| string.find(s).map(|pos| (pos, i+1))).collect()
+}
+
+#[test]
+fn test_find_digits_spelled_out() {
+    assert_eq!(vec!((0, 2),(4,9)), find_digits_spelled_out("two1nine"));
+    assert_eq!(vec!((0, 2),(4,9), (8,2)), find_digits_spelled_out("two1ninetwo"));
+    assert_eq!(vec!((4, 2), (7, 3), (0, 8),), find_digits_spelled_out("eightwothree"));
+    assert_eq!(vec!((3, 1), (7, 3)), find_digits_spelled_out("abcone2threexyz"));
+    assert_eq!(vec!((3, 1), (1, 2), (7, 4)), find_digits_spelled_out("xtwone3four"));
+    assert_eq!(vec!((10, 7), (5, 8), (1, 9)), find_digits_spelled_out("4nineeightseven2"))
+}
+
 fn last_first_occurrence_in_str(my_string: &str, numbers: [&str; 9]) -> u8 {
     numbers
         .iter()
