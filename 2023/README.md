@@ -7,6 +7,6 @@ Yes, this year I've decided to once again stick with a mix of Clojure & Rust.
 
 ### Day 1
 
-Harder ttahn usual day 1 problem. Finally got it working in Rust, although code is not much to look at - 
+Harder than usual day 1 problem. Finally got it working in Rust, although code is not much to look at - 
 lots of duplication. Started re-factoring to make use of built-in matches_indices, not sure if or when I'll 
 get to it...
