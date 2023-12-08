@@ -1,0 +1,90 @@
+(ns day5.core
+  (:gen-class))
+
+(defn -main
+  "I don't do a whole lot ... yet."
+  [& args]
+  (println "Hello, World!"))
+
+(defn seed-to-soil
+  [n]
+  (cond
+    (<= 98 n (dec (+ 98 2))) (+ (- 50 98) n)
+    (<= 50 n (dec (+ 50 48))) (+ (- 52 50) n)
+    :else n))
+
+(defn soil-to-fertilizer
+  [n]
+  (cond
+    (<= 15 n (dec (+ 15 37))) (+ (- 0 15) n)
+    (<= 52 n (dec (+ 52 2))) (+ (- 37 52) n)
+    (<= 0 n (dec (+ 0 15))) (+ (- 39 0) n)
+    :else n))
+
+(defn fertilizer-to-water
+  [n]
+  (cond
+    (<= 53 n (dec (+ 53 8))) (+ (- 49 53) n)
+    (<= 11 n (dec (+ 11 42))) (+ (- 0 11) n)
+    (<= 0 n (dec (+ 0 7))) (+ (- 42 0) n)
+    (<= 7 n (dec (+ 7 4))) (+ (- 57 7) n)
+    :else n))
+
+(defn water-to-light
+  [n]
+  (cond
+    (<= 18 n (dec (+ 18 7))) (+ (- 88 18) n)
+    (<= 25 n (dec (+ 25 70))) (+ (- 18 25) n)
+    :else n))
+
+
+(defn light-to-temperature
+  [n]
+  (cond
+    (<= 77 n (dec (+ 77 23))) (+ (- 45 77) n)
+    (<= 45 n (dec (+ 45 19))) (+ (- 81 45) n)
+    (<= 64 n (dec (+ 64 13))) (+ (- 68 64) n)
+    :else n))
+
+
+(defn temperature-to-humidity
+  [n]
+  (cond
+    (<= 69 n (dec (+ 69 1))) (+ (- 0 69) n)
+    (<= 0 n (dec (+ 0 69))) (+ (- 1 0) n)
+    :else n))
+
+
+(defn humidity-to-location
+  [n]
+  (cond
+    (<= 56 n (dec (+ 56 37))) (+ (- 60 56) n)
+    (<= 93 n (dec (+ 93 4))) (+ (- 56 93) n)
+    :else n))
+
+(defn p1
+  [coll]
+  (->> coll
+       (map seed-to-soil)
+       (map soil-to-fertilizer)
+       (map fertilizer-to-water)
+       (map water-to-light)
+       (map light-to-temperature)
+       (map temperature-to-humidity)
+       (map humidity-to-location)))
+
+; 0 266636474 location
+
+164719538 431356012  temperature-to-humidity map
+
+164719538 431356012  light-to-temperature map
+
+539253282 805889756  water-to-light map 
+
+69509358 107311488, 1340477241 1569311585 fertilizer-to-water map
+
+308433967 331371790, 3214516077 3247656485, 3869376570 3874038292, 2828231497 3057065841 soil-to-fertilizer
+
+----
+
+ANSWER: 108956227
