@@ -50,4 +50,4 @@
         input-map (parse-input input)
         instructions (parse-instructions input)]
     (println (p1 (partial lookup input-map) instructions "AAA"))
-    (println (reduce lcm (map (partial p2 (partial lookup input-map) instructions) ["CQA" "BLA" "DFA" "PQA" "TGA" "AAA"])) )))
+    (println (reduce lcm (map (partial p2 (partial lookup input-map) instructions) ["CQA" "BLA" "DFA" "PQA" "TGA" "AAA"])))))
