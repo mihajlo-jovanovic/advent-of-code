@@ -1,32 +1,20 @@
-# day8
+# Day 8
 
-FIXME: description
+Another fun one to do in Clojure! Part 1 was straight-forward; totally fell for part 2 brute force and saw a few stack overflows.
+One thing I'm still not clear on is why, as recur should be using tail recursion?
 
-## Installation
+Things that could be improved:
+- single parse-input function for both map and instructions
+- p1 & p2 are basically the same but for the predicate; can be passed in as argument
 
-Download from http://example.com/FIXME.
+Still, ~50 LoC is fairly concise. Clojure/Lisp just rock!
 
 ## Usage
 
-FIXME: explanation
-
-    $ java -jar day8-0.1.0-standalone.jar [args]
-
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+```
+lein uberjar
+java -jar day8-0.1.0-standalone.jar
+```
 
 ## License
 
