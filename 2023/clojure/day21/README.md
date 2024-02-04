@@ -1,0 +1,13 @@
+# Day 21
+
+Whew, this one was a doozy...at least for me. I struggled for about a week or two trying to find a general solution. Some approaches I tried:
+
+- figure out how many odd/even steps it takes to fully cover a single grip/subplot; then add up number of grids plus the ones in progress...
+- some type of recursive solution; idea there was to avoid simulating large number of steps and use memoization, like number of plots covered
+would be whatever I can cover in the given subplot plus recursive calls for all neighboring subplots. But I could not find a way to keep track
+of the higher-level position / path...
+
+Ultimately I gave up and read up on the special nature of actual input.  I had spent all my time with he sample input
+so failed to notice a diamond/cross patterns that didn't exist in that one. That felt like a really mean trick to pull. But oh well...
+
+Leaving all the failed attempts in the code...
