@@ -50,10 +50,10 @@
             (range 0 (count after-fall))))))
 
 (defn p2 [bricks]
-  (let [count-fallen (fn [before after] (reduce + (map (fn [[x y]] (if (= x y) 0 1)) (partition 2 (interleave before after)))))
+  (let [count-fallen (fn [before after] (reduce + (pmap (fn [[x y]] (if (= x y) 0 1)) (partition 2 (interleave before after)))))
         sorted-bricks (sort-by (fn [brick] (nth (first brick) 2)) bricks)
         after-fall (lower-all-bricks sorted-bricks)]
-    (reduce + (map
+    (reduce + (pmap
                (fn [i]
                  (let [take-out-brick (vec-remove i after-fall)]
                    (count-fallen take-out-brick (lower-all-bricks take-out-brick))))
@@ -74,4 +74,3 @@
 ;;                          (and (= 1 (count all-bricks-at-level)) (seq all-bricks-next-level)) false
 ;;                          :else (every? #(or (not (overlap?  [[x1 y1 z1] [x2 y2 z2]] %)) (some (fn [b] (supports? [b %])) minus-this-one)) all-bricks-next-level))))
 ;;                    after-fall))))
-
