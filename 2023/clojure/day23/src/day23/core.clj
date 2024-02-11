@@ -90,6 +90,8 @@
             (recur new-stack i-new)
             (recur new-stack result)))))))
 
+;; PART 2
+
 (defn helper [input v]
   (let [neighbors (neighbors input v)
         visited (conj #{} v)
