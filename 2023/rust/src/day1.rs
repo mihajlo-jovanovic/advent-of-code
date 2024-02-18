@@ -15,12 +15,11 @@ fn find_first_occurrence_in_str(s: &str, numbers: [&str; 9]) -> u8 {
         .enumerate()
         .flat_map(|(i, &n)| s.find(n).map(|pos| (i + 1, pos)))
         .merge(
-            s
-                .to_string()
+            s.to_string()
                 .chars()
                 .enumerate()
                 .filter(|(_, c)| c.is_ascii_digit())
-                .map(|(i, c)| (c.to_digit(10).unwrap() as usize, i))
+                .map(|(i, c)| (c.to_digit(10).unwrap() as usize, i)),
         )
         .min_by_key(|&(_, a)| a)
         .unwrap()
@@ -53,7 +52,7 @@ fn last_first_occurrence_in_str(my_string: &str, numbers: [&str; 9]) -> u8 {
                 .chars()
                 .enumerate()
                 .filter(|(_, c)| c.is_ascii_digit())
-                .map(|(s, c)| (c.to_digit(10).unwrap() as usize, s))
+                .map(|(s, c)| (c.to_digit(10).unwrap() as usize, s)),
         )
         .max_by_key(|&(_, a)| a)
         .unwrap()
@@ -71,7 +70,10 @@ fn test_last_first_occurrence_in_str() {
     assert_eq!(4, last_first_occurrence_in_str("zoneight234", NUMBERS));
     assert_eq!(6, last_first_occurrence_in_str("7pqrstsixteen", NUMBERS));
     assert_eq!(4, last_first_occurrence_in_str("2onestsix4teen", NUMBERS));
-    assert_eq!(1, last_first_occurrence_in_str("2onestsix4teenone", NUMBERS));
+    assert_eq!(
+        1,
+        last_first_occurrence_in_str("2onestsix4teenone", NUMBERS)
+    );
 }
 
 #[aoc(day1, part1)]
