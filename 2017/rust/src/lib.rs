@@ -7,5 +7,6 @@ extern crate core;
 mod day1;
 mod day4;
 mod day5;
+mod day7;
 
 aoc_lib! { year = 2017 }
