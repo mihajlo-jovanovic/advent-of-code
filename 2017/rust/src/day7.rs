@@ -1,6 +1,10 @@
 use petgraph::algo::toposort;
 use petgraph::graph::{DiGraph, NodeIndex};
 use std::collections::HashMap;
+use thiserror::Error;
+
+type Graph = DiGraph<u32, ()>;
+type NodeMap = HashMap<NodeIndex, String>;
 
 #[aoc_generator(day7)]
 /// Generates a directed graph and a mapping of node indices to their labels from the input string.
@@ -14,29 +18,30 @@ use std::collections::HashMap;
 /// A tuple containing:
 /// - A directed graph where nodes are labeled with weights.
 /// - A HashMap mapping node indices to their corresponding labels.
-fn input_generator(input: &str) -> (DiGraph<u32, ()>, HashMap<NodeIndex, String>) {
+fn input_generator(input: &str) -> (Graph, NodeMap) {
     let adjacency_list: Vec<(String, String)> = input.lines().flat_map(parse_line).collect();
-    let node_weights: HashMap<String, u32> = input.lines().map(parse_line_weights).collect();
+    let node_weights: HashMap<String, u32> = input
+        .lines()
+        .map(parse_line_weights)
+        .collect::<Result<HashMap<_, _>, crate::day7::Day7Error>>()
+        .expect("Failed to parse weight");
 
-    let mut g = DiGraph::<u32, ()>::new();
+    let mut graph = Graph::new();
     let mut nodes = HashMap::new();
+
+    // Build graph
     for (v1, v2) in adjacency_list {
-        let label1 = v1.to_owned();
-        let label2 = v2.to_owned();
         let n1 = *nodes
-            .entry(v1)
-            .or_insert_with(|| g.add_node(node_weights[&label1]));
+            .entry(v1.clone())
+            .or_insert_with(|| graph.add_node(node_weights[&v1]));
         let n2 = *nodes
-            .entry(v2)
-            .or_insert_with(|| g.add_node(node_weights[&label2]));
-        g.add_edge(n1, n2, ());
+            .entry(v2.clone())
+            .or_insert_with(|| graph.add_node(node_weights[&v2]));
+        graph.add_edge(n1, n2, ());
     }
-    let mut node_labels: HashMap<NodeIndex, String> = HashMap::new();
-    // Iterate over the nodes HashMap to create a new HashMap that maps node indices to their labels
-    for (lbl, idx) in nodes {
-        node_labels.insert(idx, lbl);
-    }
-    (g, node_labels)
+
+    let node_labels = nodes.into_iter().map(|(k, v)| (v, k)).collect();
+    (graph, node_labels)
 }
 
 #[aoc(day7, part1)]
@@ -71,42 +76,40 @@ fn part2_helper_rec(graph: &DiGraph<u32, ()>, root: NodeIndex, diff: u32) -> u32
     }
 }
 
+/// Finds the index of the unique value in a slice of numbers.
+/// Returns None if the slice has fewer than 3 elements or if no unique value is found.
 fn find_unique_index(numbers: &[u32]) -> Option<usize> {
     if numbers.len() < 3 {
         return None;
     }
 
     // Identify the majority value (the value that is not unique).
-    let majority = if numbers[0] == numbers[1] || numbers[0] == numbers[2] {
-        numbers[0]
-    } else {
-        numbers[1]
+    let majority = match (numbers[0], numbers[1], numbers[2]) {
+        (a, b, _) if a == b => a,
+        (a, _, c) if a == c => a,
+        (_, b, _) => b,
     };
 
-    // Find the index of the number that differs from the majority.
-    for (i, &num) in numbers.iter().enumerate() {
-        if num != majority {
-            return Some(i);
-        }
-    }
-
-    None
+    numbers
+        .iter()
+        .enumerate()
+        .find(|(_, &num)| num != majority)
+        .map(|(i, _)| i)
 }
 
-fn sum_all_weights(graph: &mut DiGraph<u32, ()>, root: NodeIndex) {
+/// Recursively calculates and updates the total weights of nodes in the graph.
+/// Each node's weight is updated to include the sum of its children's weights.
+fn sum_all_weights(graph: &mut DiGraph<u32, ()>, root: NodeIndex) -> u32 {
     let children: Vec<NodeIndex> = graph.neighbors(root).collect();
-    if children.is_empty() {
-        return;
-    }
 
-    for c in &children {
-        sum_all_weights(graph, *c);
-    }
+    let children_sum: u32 = children
+        .iter()
+        .map(|&child| sum_all_weights(graph, child))
+        .sum();
 
-    let total: u32 = children.iter().map(|idx| graph[*idx]).sum();
-    if let Some(w) = graph.node_weight_mut(root) {
-        *w += total;
-    }
+    let node_weight = graph[root];
+    graph[root] = node_weight + children_sum;
+    graph[root]
 }
 
 fn parse_line(l: &str) -> Vec<(String, String)> {
@@ -121,17 +124,26 @@ fn parse_line(l: &str) -> Vec<(String, String)> {
         .collect::<Vec<(String, String)>>()
 }
 
-fn parse_line_weights(l: &str) -> (String, u32) {
-    let parts: Vec<&str> = l.split(" -> ").collect();
-    let mut first_part = parts[0].split_whitespace();
-    let node = first_part.next().unwrap_or("");
-    let w = first_part.next().unwrap_or("");
-    (
-        node.to_string(),
-        w.trim_matches(|c| c == '(' || c == ')')
-            .parse::<u32>()
-            .expect(""),
-    )
+#[derive(Error, Debug, PartialEq)]
+pub enum Day7Error {
+    #[error("failed to parse weight: {0}")]
+    WeightParse(#[from] std::num::ParseIntError),
+    #[error("missing node name")]
+    MissingNode,
+}
+fn parse_line_weights(line: &str) -> Result<(String, u32), crate::day7::Day7Error> {
+    let mut parts = line
+        .split(" -> ")
+        .next()
+        .ok_or(Day7Error::MissingNode)?
+        .split_whitespace();
+    let node = parts.next().ok_or(Day7Error::MissingNode)?.to_string();
+    let weight = parts
+        .next()
+        .ok_or(Day7Error::MissingNode)?
+        .trim_matches(|c| c == '(' || c == ')')
+        .parse()?;
+    Ok((node, weight))
 }
 
 #[test]
@@ -149,6 +161,6 @@ fn test_parsing() {
 fn test_parse_weights() {
     assert_eq!(
         parse_line_weights("kpjxln (44) -> dzzbvkv, gzdxgvj"),
-        (String::from("kpjxln"), 44)
+        Ok((String::from("kpjxln"), 44))
     );
 }
