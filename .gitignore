@@ -30,3 +30,6 @@ pom.xml.asc
 # AoC input data files
 day*.txt
 input.txt
+
+# Ignnore my attempt at a solution in Python
+2017/python/*
