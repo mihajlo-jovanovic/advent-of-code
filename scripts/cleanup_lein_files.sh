@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # List of files to delete
-files_to_delete="CHANGELOG.md LICENSE README.md"
+files_to_delete="CHANGELOG.md LICENSE"
 
 # List of directories to delete
 # WARNING: This will force delete the directory and all its contents
