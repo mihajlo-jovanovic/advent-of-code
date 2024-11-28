@@ -1,7 +1,7 @@
 (ns day5.core
   (:require
-    [clojure.java.io :as io]
-    [clojure.string :as str])
+   [clojure.java.io :as io]
+   [clojure.string :as str])
   (:gen-class))
 
 (defn polar-opposite
@@ -45,6 +45,8 @@
                   io/resource
                   str
                   slurp
-                  str/trim-newline)]
+                  str/trim-newline)
+        patterns (map (fn [[a b]] (re-pattern (str "[" a b "]"))) (partition 2 "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ"))]
     (println "Part 1 solution: " (time (p1 input)))
-    (println "Part 1 solution (alternate): " (time (p1-alternate input)))))
+    ;; (println "Part 1 solution (alternate): " (time (p1-alternate input)))
+    (println "Part 2 solution: " (time (apply min (map #(p1 (str/replace input % "")) patterns))))))

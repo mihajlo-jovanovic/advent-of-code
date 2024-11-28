@@ -1,5 +1,51 @@
 (ns day7.core
-  (:gen-class))
+  (:gen-class)
+  (:require [clojure.data.priority-map :as pm]
+            [clojure.set :as set]
+            [clojure.string :as str]))
+
+(defn parse-input [input]
+  (mapv (fn [line]
+          (let [[_ node dep-node] (re-matches #"Step (\w) must be finished before step (\w) can begin." line)]
+            [node dep-node]))
+        (str/split-lines input)))
+
+(defn available? [step completed edges]
+  (not (some #(and (= step (second %)) (not (completed (first %)))) edges)))
+
+(defn available-steps [edges completed]
+  (let [nodes (set (map first edges))
+        dep-nodes (set (map second edges))]
+    (sort (filter #(and (available? % completed edges) (not (completed %))) (set/union dep-nodes nodes)))))
+
+(defn weight [node]
+  (+ 60 (- (int (first node)) 64)))
+
+(defn part2 [edges num-of-workers]
+  (let [start (take num-of-workers (available-steps edges #{}))
+        work-queue' (reduce (fn [wq node]
+                              (assoc wq node (weight node)))
+                            (pm/priority-map)
+                            start)
+        workers' (- num-of-workers (count start))]
+    (loop [work-queue work-queue'
+           workers workers'
+           time 0
+           completed #{}]
+      (println work-queue workers time completed)
+      (if (and (empty? work-queue) (empty? (available-steps edges completed)))
+        time
+        (let [[node time'] (peek work-queue)
+              completed' (conj completed node)
+              workers' (inc workers)
+              available (take workers' (filter #(not (work-queue %)) (available-steps edges completed')))
+              work-queue' (into (pm/priority-map) (update-vals (dissoc work-queue node) (fn [v] (- v time'))))
+              work-queue'' (reduce (fn [wq node]
+                                     (assoc wq node (weight node)))
+                                   work-queue'
+                                   available)
+              workers'' (- workers' (count available))]
+          (recur work-queue'' workers'' (+ time time') completed'))))))
 
 ;; Graph Topological Sort
 ;;
