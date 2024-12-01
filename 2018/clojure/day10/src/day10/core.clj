@@ -54,7 +54,26 @@
       (Thread/sleep pause-ms)
       (recur (update-points current-points) (inc step)))))
 
+(defn strict-update-points
+  "Strictly evaluates updated points to avoid lazy accumulation."
+  [points]
+  (doall
+   (map (fn [{:keys [position velocity]}]
+          {:position (mapv + position velocity)
+           :velocity velocity})
+        points)))
+
+(defn iterate-steps
+  "Iteratively updates points for the given number of steps."
+  [points steps]
+  (loop [current-points points
+         remaining-steps steps]
+    (if (zero? remaining-steps)
+      current-points
+      (recur (strict-update-points current-points) (dec remaining-steps)))))
+
 (defn -main []
   (let [points (parse-input (str/split-lines (slurp "resources/input.txt")))
-        fast-forward (last (take 10305 (iterate update-points points)))]
+        fast-forward (iterate-steps points 10304)]
     (display-points fast-forward)))
+
