@@ -1,0 +1,16 @@
+[package]
+name = "advent-of-code-2024"
+authors = ["Mihajlo Jovanovic <mihajlo.coder@google.com>"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aoc-runner = "^0.3.0"
+aoc-runner-derive = "^0.3.0"
+itertools = "^0.13.0"
+petgraph = "0.6.5"
+regex = "1.11.1"
+lazy_static = "1.5.0"
+array2d = "0.3.2"
