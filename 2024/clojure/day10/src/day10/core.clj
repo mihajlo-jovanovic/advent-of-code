@@ -16,10 +16,10 @@
 (defn neighbors
   "Returns neighbors that are directly up, down, left, or right on a 3D grid; no diagonal neighbors."
   [[x y]]
-  [[x (- y 1)]
-   [x (+ y 1)]
-   [(- x 1) y]
-   [(+ x 1) y]])
+  [[x (dec y)]
+   [x (inc y)]
+   [(dec x) y]
+   [(inc x) y]])
 
 (defn off-grid? [max-sz [x y]]
   (or (neg? x)
@@ -29,17 +29,30 @@
 
 (defn children [{:keys [grid size]} [x y]]
   (let [current (get grid [x y])]
-    (filter #(= (inc current) (get grid %)) (filter (complement (partial off-grid? size)) (neighbors [x y])))))
+    (->> (neighbors [x y])
+         (remove (partial off-grid? size))
+         (filter (fn [n] (= (inc current) (grid n)))))))
 
 (defn part1 [input]
-  (let [start (map first (filter #(= 0 (val %)) (:grid input)))
-        goals (into #{} (map first (filter #(= 9 (val %)) (:grid input))))]
-    (reduce + (map (fn [root]
-                     (count
-                      (set/intersection
-                       goals
-                       (into #{} (tree-seq (complement empty?) (partial children input) root)))))
-                   start))))
+  (let [grid (:grid input)
+        start (for [[coord val] grid :when (= val 0)] coord)
+        goals (into #{} (map first (filter #(= 9 (val %)) grid)))]
+    (->> start
+         (map (fn [root]
+                (->> root
+                     (tree-seq seq (partial children input))
+                     (into #{})
+                     (set/intersection goals)
+                     (count))))
+         (reduce +))))
+
+(defn part2 [input]
+  (let [grid (:grid input)
+        count-distinct-paths (fn [input start goal] (count (filter #(= % goal) (tree-seq seq (partial children input) start))))]
+    (reduce + (for [start (for [[coord val] grid :when (= val 0)] coord)
+                    goals (map first (filter #(= 9 (val %)) grid))]
+                (count-distinct-paths input start goals)))))
 
 (defn -main []
-  (time (println "Part 1: " (part1 (parse-grid "resources/input.txt")))))
+  (time (println "Part 1: " (part1 (parse-grid "resources/input.txt"))))
+  (time (println "Part 2: " (part2 (parse-grid "resources/input.txt")))))
