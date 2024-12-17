@@ -59,6 +59,15 @@
                [next-free-space' pos-y]
                nil))))))
 
+(defn can-push-box-p2? [walls spaces [pos-x pos-y] move]
+  (case move
+    \^ (let [above [pos-x (dec pos-y)]
+             next-to-above [(inc pos-x) (dec pos-y)]]
+         (cond (or (contains? walls above) (contains? walls next-to-above)) false
+               (and (contains? spaces above) (contains? spaces next-to-above)) true
+               (contains? spaces above) (can-push-box-p2? walls spaces next-to-above move)
+               (contains? spaces next-to-above) (can-push-box-p2? walls spaces [(dec pos-x) (dec pos-y)] move)))))
+
 (defn move
   "Move the robot in the direction given by the move."
   [walls {:keys [:pos :boxes :spaces :moves] :as state}]
@@ -79,12 +88,13 @@
   "Displays the points as a 2D ASCII grid."
   [grid size]
   (let [walls (get grid \#)
-        boxes (get grid \O)]
+        boxes1 (get grid \[)
+        boxes2 (get grid \])]
     (doseq [y (range size)]
       (println
        (apply str
               (for [x (range size)]
-                (if (contains? walls [x y]) "#" (if (contains? boxes [x y]) "O" (if (= [x y] (first (get grid \@))) "@" ".")))))))))
+                (if (contains? walls [x y]) "#" (if (contains? boxes1 [x y]) "[" (if (contains? boxes2 [x y]) "]" (if (= [x y] (first (get grid \@))) "@" "."))))))))))
 
 (defn simulate-pattern
   "Simulates the movement of points, updating their positions and displaying them
@@ -109,6 +119,28 @@
         walls (get grid \#)
         state {:pos (first (get grid \@)) :boxes (get grid \O) :spaces (get grid \.) :moves moves}]
     (score (:boxes (last (take-while #(seq (:moves %)) (iterate (partial move walls) state)))))))
+
+;; part 2
+
+(defn parse-grid-p2
+  "Parse a multi-line string into a map with {:anthenas :size} keys, where anthenas is a map of values to list of coordinates."
+  [filename]
+  (let [parts (s/split (slurp filename) #"\n\n")
+        lines (s/split-lines (first parts))]
+    {:warehouse-map (->> (for [y (range (count lines))
+                               x (range (count (nth lines y)))
+                               :let [c (nth (nth lines y) x)]]
+                           (case c
+                             \# [{c [(* 2 x) y]} {c [(inc (* 2 x)) y]}]
+                             \O [{\[ [(* 2 x) y]} {\] [(inc (* 2 x)) y]}]
+                             \@  [{c [(* 2 x) y]} {\. [(inc (* 2 x)) y]}]
+                             \. [{c [(* 2 x) y]} {c [(inc (* 2 x)) y]}]))
+                         (flatten)
+                         (reduce (fn [acc m]
+                                   (let [[k v] (first m)]
+                                     (update acc k (fnil conj #{}) v)))
+                                 {})) :size (count lines)
+     :moves (chars (char-array (apply concat (map s/trim-newline (s/split-lines (second parts))))))}))
 
 (defn -main
   []
