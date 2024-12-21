@@ -83,7 +83,7 @@ fn within_bounds(pos: (i32, i32), grid_size: usize) -> bool {
 }
 
 // Translated version of the `successors-p2` function.
-pub fn successors_p2(
+fn successors_p2(
     walls: &HashSet<(i32, i32)>, // slice of wall positions
     grid_size: usize,
     node: &Node,
@@ -151,10 +151,8 @@ fn shortest_path(
     map: &HashSet<(i32, i32)>,
     grid_size: usize,
     start: &Node,
-    goal: &(i32, i32),
 ) -> HashMap<Node, usize> {
     // dist[node] = current shortest distance from `start` to `node`
-    //let mut dist: Vec<_> = (0..adj_list.len()).map(|_| usize::MAX).collect();
     let mut dist = HashMap::new();
     //for r in 0..grid_size {
     //    for c in 0..grid_size {
@@ -195,9 +193,7 @@ fn shortest_path(
                 position: edge.node,
             };
 
-            if !dist.contains_key(&next.position) {
-                dist.insert(next.position, usize::MAX);
-            }
+            dist.entry(next.position).or_insert(usize::MAX);
 
             // If so, add it to the frontier and continue
             if next.cost < dist[&next.position] {
@@ -214,29 +210,36 @@ fn shortest_path(
 
 #[aoc(day20, part1)]
 fn part1(input: &HashMap<char, HashSet<(i32, i32)>>) -> usize {
-    //println!("{:?}", input);
-    if let Some(walls) = input.get(&'#') {
-        let shortest_cost = shortest_path(
-            walls,
-            141,
-            &node_at(*input[&'S'].iter().next().unwrap(), true, None, None),
-            input[&'E'].iter().next().unwrap(),
-        );
-        //println!("{:?}", shortest_cost);
-        let ans: HashMap<(Option<(i32,i32)>,Option<(i32,i32)>),usize> = shortest_cost.iter().filter(|(k, _)| k.pos == *input[&'E'].iter().next().unwrap()).map(|(k, v)| ((k.start, k.end), *v)).collect();
-        //println!("{:?}", ans);
+    let walls = match input.get(&'#') {
+        Some(walls) => walls,
+        None => return 0,
+    };
 
-        let total_count: usize = (100..9315)
+    let start_pos = *input[&'S']
+        .iter()
+        .next()
+        .expect("Expected at least one 'S' position in the map");
+
+    let end_pos = *input[&'E']
+        .iter()
+        .next()
+        .expect("Expected at least one 'E' position in the map");
+
+    let shortest_cost = shortest_path(walls, 15, &node_at(start_pos, true, None, None));
+
+    let res: HashMap<_, _> = shortest_cost
+        .iter()
+        .filter(|(k, _)| k.pos == end_pos)
+        .map(|(k, &v)| ((k.start, k.end), v))
+        .collect();
+
+    (2..65)
         .map(|i| {
-            ans.iter()
+            res.iter()
                 // Each entry is ((start, end), value).
                 // We want only those with end == 9316 - i.
-                .filter(|((start, end), _value)| **_value == 9316 - i)
+                .filter(|(_, _value)| **_value == 84 - i)
                 .count()
         })
-        .sum();
-        total_count
-    } else {
-    1
-    }
+        .sum()
 }
