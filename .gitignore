@@ -33,3 +33,4 @@ input.txt
 
 # Ignnore my attempt at a solution in Python
 2017/python/*
+**/*.bak
