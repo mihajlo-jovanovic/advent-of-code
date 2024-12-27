@@ -1,12 +1,12 @@
 use array2d::Array2D;
 
 #[aoc_generator(day15)]
-fn input_generator(input: &str) -> Array2D<char> {
+fn input_generator(input: &str) -> (Array2D<char>, String) {
     let parts = input.split("\n\n").collect::<Vec<&str>>();
     // Split the input into lines
     let lines: Vec<&str> = parts[0].lines().collect();
     let moves: String = parts[1].lines().collect::<Vec<&str>>().join("");
-    println!("{:?}", moves);
+    //println!("{:?}", moves);
 
     // Calculate the dimensions
     let rows = lines.len();
@@ -21,7 +21,7 @@ fn input_generator(input: &str) -> Array2D<char> {
     }
 
     // Build an Array2D from the vector of chars
-    Array2D::from_row_major(&data, rows, cols).unwrap()
+    (Array2D::from_row_major(&data, rows, cols).unwrap(), moves)
 }
 
 fn current_position(grid: &Array2D<char>) -> (usize, usize) {
@@ -49,14 +49,7 @@ fn do_move(grid: &mut Array2D<char>, m: char) {
     let (row, col) = current_position(grid);
     let (drow, dcol) = move_to_offsets(m);
     let (new_row, new_col) = (row as i32 + drow, col as i32 + dcol);
-    if new_row < 0
-        || new_row >= grid.num_rows() as i32
-        || new_col < 0
-        || new_col >= grid.num_columns() as i32
-    {
-        panic!("Invalid move: {} from ({}, {})", m, row, col);
-    }
-    // check if the new position is a wall
+
     match grid[(new_row as usize, new_col as usize)] {
         '#' => {
             return;
@@ -95,6 +88,93 @@ fn move_box(grid: &mut Array2D<char>, pos: &(i32, i32), offset: (i32, i32)) -> b
     }
 }
 
+fn can_move_box_p2(grid: &Array2D<char>, pos: &(i32, i32), offset: (i32, i32)) -> bool {
+    let pos2 = if grid[(pos.0 as usize, pos.1 as usize)] == '[' {
+        (pos.0, pos.1 + 1)
+    } else {
+        (pos.0, pos.1 - 1)
+    };
+
+    let new_positions: [(usize, usize); 2] = [
+        ((pos.0 + offset.0) as usize, (pos.1 + offset.1) as usize),
+        ((pos2.0 + offset.0) as usize, (pos2.1 + offset.1) as usize),
+    ];
+
+    for &(nx, ny) in &new_positions {
+        if (nx, ny) == (pos2.0 as usize, pos2.1 as usize) {
+            continue;
+        }
+        match grid[(nx, ny)] {
+            '#' => return false,
+            '[' | ']' => {
+                if !can_move_box_p2(grid, &(nx as i32, ny as i32), offset) {
+                    return false;
+                }
+            }
+            _ => (),
+        }
+    }
+    true
+}
+
+fn move_box_p2(grid: &mut Array2D<char>, pos: &(i32, i32), offset: (i32, i32)) {
+    let pos2 = if grid[(pos.0 as usize, pos.1 as usize)] == '[' {
+        (pos.0, pos.1 + 1)
+    } else {
+        (pos.0, pos.1 - 1)
+    };
+
+    let new_positions: [(usize, usize); 2] = [
+        ((pos.0 + offset.0) as usize, (pos.1 + offset.1) as usize),
+        ((pos2.0 + offset.0) as usize, (pos2.1 + offset.1) as usize),
+    ];
+
+    for &(nx, ny) in &new_positions {
+        if (nx, ny) == (pos2.0 as usize, pos2.1 as usize) {
+            continue;
+        }
+        match grid[(nx, ny)] {
+            '#' => panic!("Invalid move"),
+            '[' | ']' => {
+                move_box_p2(grid, &(nx as i32, ny as i32), offset);
+            }
+            _ => (),
+        }
+    }
+
+    grid[(pos.0 as usize, pos.1 as usize)] = '.';
+    grid[(pos2.0 as usize, pos2.1 as usize)] = '.';
+    if pos2.1 > pos.1 {
+        grid[((pos.0 + offset.0) as usize, (pos.1 + offset.1) as usize)] = '[';
+        grid[((pos2.0 + offset.0) as usize, (pos2.1 + offset.1) as usize)] = ']';
+    } else {
+        grid[((pos.0 + offset.0) as usize, (pos.1 + offset.1) as usize)] = ']';
+        grid[((pos2.0 + offset.0) as usize, (pos2.1 + offset.1) as usize)] = '[';
+    }
+}
+
+fn do_move_p2(grid: &mut Array2D<char>, m: char) {
+    let (row, col) = current_position(grid);
+    let (drow, dcol) = move_to_offsets(m);
+    let (new_row, new_col) = (row as i32 + drow, col as i32 + dcol);
+    // check if the new position is a wall
+    match grid[(new_row as usize, new_col as usize)] {
+        '#' => {
+            return;
+        }
+        '[' | ']' => {
+            let can_move_box = can_move_box_p2(grid, &(new_row, new_col), (drow, dcol));
+            if !can_move_box {
+                return;
+            }
+            move_box_p2(grid, &(new_row, new_col), (drow, dcol));
+        }
+        _ => (),
+    }
+    grid[(row, col)] = '.';
+    grid[(new_row as usize, new_col as usize)] = '@';
+}
+
 fn display_grid(grid: &Array2D<char>) {
     for row_iter in grid.rows_iter() {
         for element in row_iter {
@@ -110,7 +190,17 @@ fn simulate(grid: &mut Array2D<char>, moves: &str) {
         print!("\x1B[2J\x1B[1;1H");
         do_move(grid, m);
         display_grid(grid);
-        std::thread::sleep(std::time::Duration::from_millis(30));
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+}
+
+fn simulate_p2(grid: &mut Array2D<char>, moves: &str) {
+    for m in moves.chars() {
+        //clear the screen
+        print!("\x1B[2J\x1B[1;1H");
+        do_move_p2(grid, m);
+        display_grid(grid);
+        std::thread::sleep(std::time::Duration::from_millis(200));
     }
 }
 
@@ -126,15 +216,64 @@ fn calculate_sum(grid: &Array2D<char>) -> usize {
     sum
 }
 
+fn calculate_sum_p2(grid: &Array2D<char>) -> usize {
+    let mut sum = 0;
+    for (i, row_iter) in grid.rows_iter().enumerate() {
+        for (j, element) in row_iter.enumerate() {
+            if *element == '[' {
+                sum += i * 100 + j;
+            }
+        }
+    }
+    sum
+}
+
+fn scale_grid(grid: &Array2D<char>) -> Array2D<char> {
+    let mut new_grid = Array2D::filled_with(',', grid.num_rows(), grid.num_columns() * 2);
+    for row in 0..grid.num_rows() {
+        for col in 0..grid.num_columns() {
+            match grid[(row, col)] {
+                '#' => {
+                    new_grid[(row, col * 2)] = '#';
+                    new_grid[(row, col * 2 + 1)] = '#';
+                }
+                'O' => {
+                    new_grid[(row, col * 2)] = '[';
+                    new_grid[(row, (col * 2) + 1)] = ']';
+                }
+
+                '.' => {
+                    new_grid[(row, col * 2)] = '.';
+                    new_grid[(row, (col * 2) + 1)] = '.';
+                }
+                '@' => {
+                    new_grid[(row, col * 2)] = '@';
+                    new_grid[(row, (col * 2) + 1)] = '.';
+                }
+                _ => panic!("Invalid character: {}", grid[(row, col)]),
+            }
+        }
+    }
+    new_grid
+}
+
 #[aoc(day15, part1)]
-fn part1(input: &Array2D<char>) -> i32 {
-    //println!("{:?}", input[(2, 1)]);
-    let mut grid = input.clone();
-    //simulate(&mut grid, "<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^");
-    let moves = "^>v^^>vvvvv><vvv>vv>v^v<v<<<<><v>vvvvvv<^vv><v^v>><v<^><vv^^^<<<v>>v<<v^>v<<>v^^v>vv><^>><>v^>^^v<vv<<>vvv<^v<^vv><><vv<^^^v^><<vvv<<^>>^<<>^v>v^<^<^v>v>v>><v>vv^<^^>><<>^^v^<><^>^^<v^>><^v<><^v><<<v>^^>v^<^>>><^>^^^<<<v^><v<v>vv<^<v<^>v>>>vv<^<^>v<^><><<vv^v^<<^<>^>v<^v><vv><v>^^^^v^<><^^^^^v<vv<^<^^^^<v<vv<v<^vv<<^<v<<^^<<^><<<<vvvv<<>>^<<v<v^^>vv<^v^^^>><>^<^^><v^^vv^v<<^^^<<>v^>v>v<<^<>>>>><><v^<>^^><^<v>><<>><v^<v><<v<^v<<>vv<>^<>^>v>>^^^^v<<^vv><<<<^v^<>v<>v>v><>v<v<^vv^<^vvv>>^<><v^^>^>v<v>>v^>v^><^>^<^<>^>><<<<>^vv<<^>v>^<^><v<>>^>v<^<v^^>^><<v<^v^>>>>^v<><>vv<^>^^>vv<v^>vv^>v^^>^^v<>>v><^vvv<<<<><v<v^<^^^v^^<>>v<vv<<>v><>vvv^<^v^vv^>^>vv>>>^^<<<v<^><>v^^^<<>^<v<^>v>>>vv^<v<v^>^^vv<>v><<^^<>>v><><v<>vv^<^^vv>>^v^v<>^^<^>vvv<^>vv<^<^v>><^^^v><^>><^<^<<v<^<v<<^v>v<^v<^<<>^<<<><v^>>^^v>v<^<<>vv<v>^<vv<>v>v>v^vvv^<v<^<<>^<>v^^><^>v>v^^>>>>><<<<<<>^>><^<v^v<<v^^v>>^v<vvv><<<<vv>v<>v<>><<><^<v<>^><<^<vv>^><>vv^^>vv>>^vv^>^^v^<<v>>>^<v<<v>>vv^<>vvv^>^>>v^v^^^vv^vv^<vv^>v^^^<>v^<v<^>vv<v>>v^^v<><><vv^<vv<>^<^>v>v>^>^v^^>v<><^v>^^^<v^v>^<<vvv>>^<<>v><^<^^^<v><<v<^^^><<vvv>v^><<^<<>^^>^><>><^v<<<v<>^^^v<^<<vv<^vv<v^<^^v>v>^<^>^>>>^<^vv^><>^^v^>vv^v>^<<<vv<^>^<<^>>^^>vv<^<v>^v<^<v<vvv>vv^<<^<>vv<<>^v<^<<<<^v<>^>v><vv<^v^^v>>>><vvv<vvvvv>vv<v^<^^^<^vv>v<^v^^^<<^<^v^<^<^><^>^<<<>v<>v>v<^vv>>>v><<vv^>v>^^^v>><<^>^v><^>^v^>^><v<>><^<><^vv^<^<><^^vv^^><v^^><<^>^>>v^^>^^vvvv<><<>^vvvv^vv<^>^><<v^<><v<vv^>^^<^<v^^>^vv^v^><<v^^><<><^<<^vv^^<>>>^^^vv>v^<^<vvv>^v>^^v>>>><><>v^vv>v>vv<vv^vvv>vv^<^^v<<>^v<><>vvv^>>>^v>><vv<>v^v<>>>>^<^^<v>>^>^>v^>>v<>v^^^v<^vvv<><><<^<v<>^>>>^v<v>>>>^^><<<<<^^<^<^^>^<>vv>^>vv>v>^<><vv>>^v>v^^<<^>><^vv>v>^>^>^<<^v>^v<^<<>>v^>^v>v>v>><<<^^<^^^<<><>><<^<^^v^v^>v^^><v>>v>^<v^v>>vv^><v>v><>>>>>>>^^v<^>>>v<<><v<><^<>^v<^^<<^<^^vv>^v^^vv<<^vvvv><<<v><^^^^>>^<<><<>>vv>^^<<^><<<v<^><^^^<<>v^^^<<<vv>v<v>^<v>vv>v><vvv>vv^v^v<<v^^<v<>^^<><<<><v<^^^<vv<v>v>>>>v<^v<^^^>>^>^^<>^<<>^v^^><>>><<<<v^v>^^v>v<>>v<v>>v^v^<^<^><^<v><^^vv<^^<>v<><v>^v><^^<<>^<>^<<>^v^vv<><^^>><^<<<>>v<vv<>>^<<^<>v<<>>>^v>^<>v<^^>>v>^v>><^<<^><^<>v<>^v>><<<<<vv^v^>>>^^^>^<^>^>v^v<<v<>vv<^^<>>><vv>^><^^<<><>>^>v>^^>^<v<>^v>^><<^^>>vvv^<v^^>><><^<^>v^^v>>>>v^<>>v^^<v>^>><<>>>>>><<^^<><<vvv>vv^^v>v<^^vv>><>>^v<<>^v>^vv><^>^^vv>^v><>>>v^^<><^vvv>^^^<>v<>^v>>^vv<^<^<<><>vv<<^>>^^^<v><v<<><>^><>^v>^<>^<^>^>><^<>v^^<><^^<>v^<^v^<<<>v^<vv>>^>>^^^>>v>>>^^v><>>>><><^^<^v<<^v^^^<v>^v<><<v<v>>v^v><^<>>^<^v^^>>^>v<^<>>^^v>>vv^>^>^^><><v>^v<<^v^vv^vv^^>>>^^v><v>^<vv^><<<vvvvv>>^v><<<^><^<><<<>>^^^^>v>v^<^v^<v^<^vv<^^^v>>^v<^>v<^>>>^<^v^<<>vv^>><><v>v<v>>^>>>>v^<<>^><<^><^>^>><>^^v>><^^<^^vv><^v^<v<vvv><<v<>v^<><^>v<v^>>>vv^<<v^v<><<^v<><v>>v^v>^v^<v^<^^vv<<<>>>v<<<v^vv^v<><vv<><<>>^^<^>v><<v<^>vvv>^vv^vvv<<v^vv>^vv<>v<>v<v^<<<^vv>^^^^>^>>>><<<<^^<>>>^><^^><<<<<>v>^v><^><v<^<^v^><^^^<>>^^<vv<v^>>><^<>>^v>^<vv^v<^>>^<>>>v>>>>v^v^><vv^<<v<vv>^<v<>^^>v^>><>>^<<vvv^>^<>^<^<>>^^<<<<vv>>v>><vvvv>v^<^v<>^^v<<^v>>>^^<<>>vv><><>vv<^<v^<>^>vv>^<>vv>^vvv^v<>^<>vvv^v<vv<><^^v<vv<^>^><<v>><v>>^^^<v<v><<<^^^^>v<^^>v>v>v>>>v><<^^<^<v^<^>>>^^v>^><^v>>><><v^v><><v<<><v<>vv<>v><<>^v>^v<<^<<^<vv^v><>v^>v<><<v^<v>^^<><<v^v<^<>^<><>>^v^^^v>vvv<v^v^^><^><^v<>>>^<^>v><^<^^^^vv><vvv>v>^><^^v>v^v^v>><>^<v^v>>^v<^<>>><><>vv><>^<^^^^v^<^<<<>^><^<>>v<>^>v<^<^<^<v>^^v>vv>vv<^<<^<<^>vv><v<><<<^v>><^><<>v^>v>v^<<vv<vv<>>^vv^>v<>v^<v>v>^v>>>^<^^v^<<>vvv<vv><>^<><^^^v>v^^<^v>>vv>v^v>v^v>^<^^<<^>>><^^vvv^^>>^>>><^v><^^<>^>v<>>^v<^^vv>v<^>v>^<vv^v^^^^v<v<>vv<<>v^v>>vvv^<>v^vv^^^>v<>>^<^<^v>vv^^><^^>v<>vv<^vv^<<vvv^>v^v<<^<vv>v><>^^<^>vv>>^>><vv>^>^<v<^^>v^>v^^<>v>^>vvvvv>>>>^^><>>^<>vv<v<^^>vvv^^<v^^<^<v^v<vv^<>>^<^>>^^<v^<v^<<<>><v<><vv<^^><^vv>vv>>v^>^><>>v<<v^vv<v>>>^^<v><<>><><>^v<<^>v^<^^<v^^^v>>^>^<>^>>^>>^<vv^^<<v><>^>vvv><v<><<<<^v>>>^^>><^^^vv^^><<^v>><^><<v^<v>>v><<v>^>^v<><<<<^v<vv>v<^^^<^<>^>>>^><<<^<>><v^^<<<<<v>^>vv^v^^>^>>v><^<<>>v<^>vv>>><^^>vv>>^>^><<^v>>vv<v>vvv<>vv>v<><>>^>><><v<>>>v^><>^v^><^^<^>v>vv^>>v>^^v^<<^^^<<<<<<>v^v^^v><><v<^>v^><<vv^<vv<<>>^><>v<v>v<v<^vvv<>^>^<<v^>>v<>v>^<<^>v^v^>><vv<vv<><<v^vv><^<v<<^v>>>vvv>^<>vv>v<^><<>v^>v>v<^vv>^^v<vv>><<vvvvv<<v^v^<^<^>^v<vvv><><>^<<v<vv<^^^><^>^<v<v^>>^^^v>^>^<^^^<<vv^^^><^>v>>v>>v>>>^<v<^vv<^vv<>^><<^v^>^<><^>v<<>>v^>>vv<^^^^><^>v>>^>v<^>><^^vvv<v<v^v<<^^v^^>v<^v<vv^><<^<^v>^vvv>vv^>v<vv^^<<><v<<>>><v^<>^v<<<<<>v^>><>v>>^>^<^v<<<v<^>^<<^<<v>><><><>^>v^v<^^^<v^v>v>v>>v<>^^>^<<v^^<>>^<>^^><v>v^><<<>v<<<<^^^^^><>v<><v><>>vv^vvv>^<<^<>vv^>v>>><v>><<><>^<v<<v^>^^v>>^^<^>v><^<^<<v<v^<<>>v>vv<^>v>^<>^<^vv^^^^vvvv><<>^v>v<v<^^v^<><vv>^>^>>vvv<<v^v>^<^^>^>^v<>>^<v<v>v><>^>v^^>^<^<^<vvv^<<><v>^v<v^>>>>>^><^>v><>>^^>v>><^>^^vv<v>vv>^<^^vvv^>><v><^<^<<^<>v^<vvvvv<><<<^v^v^<v>>v^v>v<><v>^><v^v<^<<^<v<^^^><><<^<>v>^^^<v<<vv>><<v>^<v^<>v>>^^^^^><>vv^>>^^<>^v^^v><<<<^>v^<v<^><<v<>^<>^vv^<^<<<v^><v<<^<>v^^>>^<vv>^<<>^^<^>^v^><^<v^><><<^<v^v^^<^v><v<^^<v^^^^<v^>^<^<>><^>>^v><^<^v<^vv<<>^^v^v^<>v<<^vv><>^>^<v>^^^<v^<<^vv>>^<>^^^<v>^^^<v<><^>v^v^><<<^<^>^^v^>vv<^v^>>>vv>>^^^<v<v<^vvv^<^<>>>><>>^vv<>v^><>>^^<<v^<<>^<<>^vv^^^^^v<^>^>v<^<vv^<v>^<^<^<^v>v<v^^^>>v^>^^^<>>^><>v^>>>>^vvv^vv<<<>vv<<v<>vv<>^v<v>^<^><^^vvv<v<^>v^<<v<<<v^<v<<><^>^^<<>>>><^v><>^>v>vv<v<>>^><v^^^^^v<<^vv<^^^<v>^<<<<<>><<^vv><<^^<><<v<<^v^<><v<vv<v^>^v>>^<<^<><<<^<><v^v^>v><>v^v^v>^v<<<v<>v><>><^v<v^v^v^<v>vv<>>vv^>v^>><<^<v>v^>vvv^>v>vvv>^<v>v<>v<^>^<><^<v^><><v>><v^v>v>v^<>>^vv<>^><^^<^^^<>v>v^^<<><^v>^<v>>v><v<<v><>v>^v>^<v^>vv<>^v^>>>>>v>^>vv^^<v<>v^<>vv^vv>v<^v>^^^vv>>^^>^><>^v>>>^^^v>^v^<^v<<<<<<^^<v<^^<>^v^^><><^vvv^^v^^^^>>vvv<v^><vvv^v<><<v^<<<vv><<v<^^^vv^v<>>v<v<><^v>><<<<^<<^>vv<v<vv>v^v^v^^><<<^v^^<vvv^^>^>vvv>>^v>v^v<^<^<^<<^<>^>^v>^vv^^v>^^v<^>v><>v><<<^<>^^>vv^^<^vv^>^>><>>v^^>>^v<v>^^<>>>>><<>>^^v<^>v^vvv>><<>^>>><v^>v<>><v>^^vv<>>^v<<<<<<v>^v>^<><^^<>^^v^^^<^^<>v<>vv^^>>vv>><<vv>><v^<>^>^^^v>^><^^v^<<^<>>>^<>>>>^^^^v^^>v>v>v^>v>^<<<^><>v>^^>vv<^^<^>vv^<^vvvv<v<^^^><v>><^<^<<>v^>v^<v>^^<>^>>><>>^<^^^^<<^><<>vv>v^v>^^<vv<><v><v>>>vvv<<>^v<<^^>^v>^^>v>>>^^<v<>>vv<^<vv>v^<^>^^^v>^^>>v^^v^v^>>^^^>><<^>^^v<^>>^vv^^v<<^<<<^<^<vv^v<^vv>>v<>v<<v^v>>>>>vv<^v<<^>><v<<vvv<^^>>v>>^v<v<>>v^v<<>>^><vv^<^^^<^vv<>>>vv<^<<<^><>^^>><<>vvv^v<v<<^>^v>><^<v>^<<><>^^>>>>^^v<>^<^<v>v<vv<<^^>^^>>^v>>>>v>v<^<v>v>^>><<v^<>><<>^^<vv>v>^>^v<v><<v><>^^v<v<<>>v^^^<<><<<>vvv<v>v>>>>>>><vvvv><vv^v>>><<^<>><v^<v>vv<>v>^<<>><vv><<v>v>>><v<^<>>>>^^<>v<>^vv>>>>>^^vv><>v><<^<v<<^><v>^<<^^v<<><^>^^>v<<vv<<vv<^^^^<><^^^<^>^<>><^><^^<^><><^v<><v<^^v^>^^>>^vv>vv>v>^v<v^><^<<<^><^>>^>>>>v><>>^v<^<v><<v^><<^><>^vv<<>^<<^v<>^<v<<<<><>v>>><^v^<^^>>^^v^>v>>^vvvvv><<<<v><>vv<>^<v<>><<vv^<>>^vv^><v^<^v<<>^<v^>^^v>vv<v^v>><<^<>>^<><^<>^><<^^v>^^>v^^<^<v<><>vv>v<v^v<>v<^v^v^><v<vv>^^^v><^>><^<<<<^^><<vv>^<>>>^>>^v>>>^>><>^>>v^<^^>^v>vvv><^<v<<>vvv^<v^>>vvv<v>v<v^<<^<>v<v<><v^v<>>^^>>v>><^vvv>vvv<^<v^^v>><>>v>^<>>^<v<><>^<v^>v^<^v<<<<^v>>^<>>>^><><v>v>><>^^><vv><^v>><>^<v<<>v^<>^vv<<<>vvv><<>^<v^vvvvv<<^<vvv^^^^>^<<^><<^>>v<<<<^<<^^><^^v<^<^<>^>v^^^>v>^>><>><<v<^^<v<<v><^<^<>^^>>>><vv<>><<^>v<>>vv<v^^v>>>^>v^^<>^>>vv>v><>^^^><^><^^<<v<>^^vv>>^v^v<^^><>>^v<v><^^<^><v>v<><vv>>><><^v><>v^<><<v^<><^>>><^<>^<^^^<^v^^v^^^<<^>v>^<^^^<^^<^^^><<<<><<^^<<v^<<<^v^><>^^v><><^v<^<^^^><<^v>v>^^^>^^v>>^v<>v<><>v<>^^<vv^<vv^>^^^v<><>v>v<><<<^v<><>>>>^^v^v><v><^<^v^vv<><v^>v^<v>^><<vvvv>^><<v^<<>^<v>^v^<^<^>v>><v<><v>^vv<^<vv<^^>v<v>>v^^><^<>v<v><^^<v<>>v^v^^v^^><^^><<>v^>^^>vv>v>v>><^vv<<<^<<>v<v^v>>v<<v<><<<^^^v^<<vvvv<^>v^<><>v^v^>>v^<><v>vvv^v>^vv>><>>>v^^v>^<^>><>v>>v<vv>><^v>>^^v^<<^v<><><^^<v<v<^^^^<<v^>><>^^<<<v^v^>^>vv><^>^^v>^>^<vvv<<^v^<><vvvv>><v>v^>vv><><<<<<<>v^<<^>^><<^<v<v>v<^v^<<><>^^<v^<<^<^vv>vv<v<v><v>v^^<>vv<^><<>v><<<v>^^<^v^>>>v^<v<vv>>>^v>>v<<vv<<<<>^>^^<v>>v><^vvv><<<><^>^^<><^^v^<^<>v>^>v><>>>^v<<^<v><^v^<><>>^<<>^v^v<^<^^<vv^>v<^v^v^><>><>vvv>^<^>><v>^v^vv>><<vv^>^^^^v>v<><><<><<>^>v><<v>^<^vv<>^v^^>v^^^>^>>>>>>^<^<>v^^>v><^<<^<vv^><^^^><<vvvv<^^^<^vvv>^>vv>>>vvv<<>v^<vv<v^^^<^v^v^><v>v<<vv<>^^>vv>>vvvvv<^><v>><v<v>^^^^<^v<^>>^^vv^>^>>v^<<vv^>v^v>^><v>^<^<<^vv>^^vv>>v^^^<v><v<>^>>><^^<<>^^^<v<^vv>vv^<>v><<<^^>^>^><<>v<><>^<v<v>v>v<<>v><>>v^<>v<>v<<v^v<v>><^<^<v>><>><<v^^v^>^v^v<v^v^v^v^<^>vv>vv>vv>^^v>>v^^<vv<v^>>>vv<^v^>^v>v<v><<<<vv<><vv<v^<<<>v<>>v>>>^<<vv^vv^<v<v^><v<<^v^vvv^<<vv^<<>v<^>v^<<v<vv>v>>>>>v<vv<><v<<v<^<^<^v>v>^<v^<>v>v<<<v^<>>v><><>v<^^<v>><^v^<v^v<v><><>>v>^<>^^<<<v^>v>^><v<vvv^^v>^<>^<>^>^<v>^^^^^v>v>>>>v<><<vv^>^>>^>><vvv<v<<v>><<>>^vv>^v^<^>>>><<><<<<v<^^^>v<><vv>>v^^<v<v>v>><^>v>>>^v<<>vvv>>v><v<>>^><<^>v<>v<>^vv^>v^>vv><^<^^<v^><<v^^<^^^<^<^<><^^^v^^<v><^^>>vvvvv^v>vv^>^>^^><>^^><<<><<<v^^<<v^<<v^^<^><<^>v<<<>>^v>v^vv<^<v<>v<>^v<^^>v^^>^<<<^<><v>^^<>^>^<<<><v^>vvv<^><>vv>v><v<^^>>^v^^>^>>vvv<^<^<^vv<>><v^v^<v>^v^<v^><^<<>v><<v>^v^v>>^<vv^<>^vv>^>v>vvvvvv<^v^>vv>>^<><>>>><>^v<>>^vvv^^><<>><>^v<^><<>^v^>v>v^>>^^v^v^v<>v>>v<v^^<vvv>^><>>^^^^^^<>v>vvv>><>v>v<^<>v^v^<<^<>^^^<><<<^^>^^v<<>^v<^>>>v<>^>>v>v<<^^^><^>^v>>^v^v<><<^^^vv^v^vv^<>vv<v>^^v^^><v<^<><<^^^><v^<>^<<^<><^v^vv^v^>^<v<vv<>vv^v>>>v>v>^<vvvv^>><<<vv>v>^>><^<<vv^<>>^v^^<v<v>>vv>v>^v^>v><^^^^^<^^v>v^>^>vv^^<<><>>^v<<v<v>v<<><<<vv<v<<<vvv^^>^vv>>v<^v>v^v>v<v>vvvvv<><^v<>><^<<v>^>v<^>><vv>^>^>^v<^<^<^^><><v<^>>v>v<<<v<><>>v<^v>><vvv^<>^^<v^>vv><^>v<vv<v^><v><><^v<^v>v><<>vvv>v<<<vv^>^<>^>>>>><^<><><<^>^><^>^^vv>^<<^<v<vv<>vv<<^>^vv^^v<>vv<v^vvv^^<v><<v>^>v<^<<^v>>^^<>^v^^^^v^v^><>vv>vv<v>^^v<^><>>><>vvv^><<>><>v>^^vv<<vv><<v<vvvv><>v>v^v^v>><^^>v>^^><^>vv^v>vv><v^v>>>^^<>v<>v^vvvvv^v<^><>^^vv^<v^vv>^v<^<<>v>>^v>v^v>^^>^v^^<<^>><v<><<^vv>>v^>vv><v<<vv^<<^<vv>>v<^>>>><<>vv<<>v^>>vv>^<v><^<>^><^<>>^^^<>^v<><v>v>v>^<^^>>v^v<^v>><<>>v^>>^<<v>v<v><^^>vv^>v^<<<^v^>^><<<<v^>>v^vv<<^>v<vv>>v^<vv^v>v<<<v^v^vvvv<v^^^v^vvvv^v>>v<^><<^^v<<<<<<v^^<^^v>^>>>vv^><<^v^^<><^>^<<<<^<<^<<vvv>^^^><v^>v<><<><<^^v^>v^><>v<<v><><>>><<v>vvv<^>v<v^><^v^>v^>vv^<>^<^v^^vv><^^>v><<v><>>v^<^<v>^>^>v<^vv>^><<>v>>>^>>^<v<>^^^<^^v>>>vv<^<<vv<>^v^^<^^<<>v>>>^vvv>^^<vv^<v^<>^vv>^<v^vv>^v<^><v^>v>>v>v<vv^<^<>><vv>^v<^<v<>v>v>>v^>>v>^<v<^<>v>v^v^>v><v>v^>^^>v<<v>>>^v^<v^^>>^^^>>^vv<<^<>^>><<<>>^^<^v^<<vvvv^^v^<<<<<^^<^<^<>^v>vvv<^v<<v>^<^v<vv^^<vv>^^<>>^<v>>v><v>^v^^<<<>v>><^v^>>^>>><^>^v<>^<^vv><vv>v<v><^vv<^^<<v<^><vv^v<vv^v>^v^>>^>^^v^<>>v<<<<^<>v^>^vv^>^><v<v><v><>vvv<^<<>vv<vv<^>vv<v>vv><^v^v^^>v>v>^>^^<>>^vv^v<<v<>>>>^^>vv<<<<^^^><v>>^>>^<>>>>v>>^v<vvv^v<<>^^<^^>^>^v><v>^v>>^^^<<v<^vv^>v^<<v^v^<>v>>^v^^v>^v^>>v<>^<^^^>>^^^<^<><<^<v<<>>>v><>^^>>>^v^^<><^<>><v^^>vv<^>><<v^^^<>^<vv^><>>v<vv^^vvv<><><vv><^>^>><^>>v^vv<^v^>^v<>^vv<^<>^>v<>^^><<<>>v^^v^v<vv^^<<v^v^<>^^vvv<<v>^^>^vv<v^<>^^vv^^^^^>vv^^vv<^><v^<>>>^^^^><^^>^v<<>>>vv><<vv^>^<<v<v><<>^<>^<v>^v^^^>v<>^v>v><>^vv>v>^<v<<>v>>^<<>>vv>v>v>^v^^v^>vv>v<v<^v>>><<<>><<>^>>vv<><vv>^>vvv<^^><<^^^<v><^<v^>>>v^^>><><vv^^^v>vv><v<v^>^<^>v<>^v<vv>>v<^v>>><<<><v<<>^v<>>><vv<<<<>>v<^v^vv^^<<<v<>v<vvv<^<>^>^^><^v>>^vv>v>>>>>^><<<><vvvvv^<^<<^>><<<v^<<>v^<>>v<>^^><v^<^<v^v^<>>>>^v^v<v^v<v>^^v^>v>>v^<vv^^>^^^v<^<<^><v^^>^<v>>^v>^<^^<v^><v<^>^>^v>>^>^<>^vv^^>>>^<<<>^v<^<<v<>^^v>^>>^^^^<^^>^v><^><<v>v<v^v<^^^><v<<^>v<<^v^<^<<<v<>>v>>^<<>vv>v><<><>>><<v>>><>>vv^><^^<<v^v>vv<^><v^<<>vv>v<^>^^>^vvv<^<v^<><v<^^><^<^>>^^>>>vv>vvv^^><v<^<<v>^<>>^>vvvv<v>v>^^vvvv>>><^>v<<^^^>v<v<>^<^^>^<<><<v>v<^<<>^<v^>^vv<^>vv>^v<>vv<v<^^>v>v^^<^^vv<^>>^v^><<<>v>><^>v>^^v^<<<v><>^<vv^<<<^^^<<v<>>><<>vvv><v>^v<vv><><^>vv^>v^<>v^<<^v^vv>^v^<^<>^<><>vv^^<^v>>^v<v<<^>v<<v^>>v^^^<^v>v<>>^<v^<<v>v^v^^<^^<^<vv^^v<<<><<v^>>v^<<<^>>v^<<^vv^v^<>^>^vvvv^v>v^<>v<^vv<^>>v<<<<<v>>v><^vv>vvvvvv><v<<<^^^<<^v>v>v<<v<^^v^^^>>v^v<<^<v<<^<><<><<<v^^>><^>><>^><>^vvv<^<^v>v>v>^>^v^><^>v><>^^>v^<v^^>^<v<v^^v<^<v^v<>^>vvvv<v><>>^<>^>^>^<vv<><vv>>>v><v^<^<^<><^^^>>^>>>>>v^v^v^<vvvv<>><>^>v^^>>v^<v<v^^><><v^v>>v<^v^v^v^^^>v<v<<v>^^^v>vvv^<^^^>v<v<^><>>^><>vv^<>>^^>><^v<^^^><vvv><^<><^<><vv>v>^<<<>^<>><^vvv^>^<><v<^v^>>^^^^^<<<><<<vv^v^v^><>>>>v<^>^vv>vvvv<^v<<^vvv>v^>vv<><<v<v<^v<>v>>v<v^v>^>>>^v<vv^>>^^<>vv>v^vv<<v^^<v^v>vvv^v^<>^<<<v>>vvvvv^><^>><^v><><<><><><<>^>^^<v^<v>^vv>vv>v<>vv<>>><v>>><^>vv<<>^v^<v>>>^v<<v>^<>^^vvv<^^v^vv^^<^vv^>>^v^v>>vvv^<^>><v><>^v^>>>v<<<v^>v^v^<^<<>^vv^^^>>vvv^^<v^>vvv>><v^vvv<vv<^>^<><><<>^>^^v>^v^v^v<<><^<>>><^^<v<vv>v>^v<^^v<^vvvv<vv>^<^v^^>v<<<^v<>v>^v^^v^>v<>v>^^^<<>^vv><v<v^^<v>vv<>>>^<^^v^^>v<<><vvv>v><>v^<<<<vv><^>v^^<^<><>><<>><v^v^<<v>>>>^^>^^<<>^>^<>^><<^<<<<v^<^>v^^v><<>>^v^<<>><<<v><^>>^vv><>>v^v^^v><v<^^<<v^<v^v>^^^><>v^>>^>vv^v<v>v>^^v^>vv<>^><^v<>>^vvv>><>>v<>v>^vv<v<vv<^v>v><<>^v><<^^<<<<>^>><v^<>>^vv^^v>vv>^^<^^<^^><^>vvvv>>^<^v^^<>^v>^>>>^v^>>^v><v>>><<v<>>v^v>^vv<^<^v>v^^<><<<v>^<vvv<v>>><<>^<^<vv><^vv<<^<<>^>^v<<>^vv<>vv>v<vvv^^>^>v>v<v<v<>>><^^<<^>><^v^^<>>^^^v>^<v^^<<<v<^vvv>v^<>>><v<>^^v><>^^<^<>^<<v^v><<v>vv^<<<^^><v<><^<^^^><<v<v<<^><<>^<><>^^v^v>v^v>^<>^><>^^<vv^^vv<^^v^^<><<>v^<vvv<^>>v>>^>v<^^^<<<v<^<^><v><vv<v^>><v<^v^v>v^<^<>v^^v^<^^^>>v^>><^^<<v>>^><^>^v<vv^<v>v^vv<v>v^<<><>^<^<>>^v^v^^><v<v^>><<v^>>^v<v^>^v^>v^^>v^<<<<^v^<>v^>vvv^^>v>>>v^>^<vvv>^^<>v>v^vv<v<v<^>v<><><><<>><><>v^v>^^^<v^^>v>^<>^><><<><v>^v>><^<<vv<>vv>>v<<vv<>^^^>v^^v<vv>^v^v<v<><^<>>>^>v^^>^>^^^v>v>>v<<><>v^^<v<<<>^v<vv>^v<v<^><<<^<v>>^v<^>^>v<<>^^<^vv<<v>vvv>v^<<v>^><>^>>>^^^vv>v^>>^<^<>^^<><<>>>>^^^^>^><v>v^v<<vv<vv>^^><<v<<<<<<v<>vvv<^v^<^^vv>v<^v^>^^<<>>^<<^v^^v><>>v<>v>>><<>^>><^>v>^<^v>>><vvv^v<v><>><^<<v^<^^^^v<v^><>v>><>vv>v>^<<^>>>v<>^v<<><^v<><vvv<>v^^>v^<vv<^>>v<^v<>v^^><<^vv^<<<>^v>^>^<<^^<v<><<<<^^<v<<^>v>^^^<<><>^vvv<v<^>^v^^vvv^^>^^<v><^><v>v^<<^^><^v<<^<^^<^^^^>>^v<>^v>v>>^v>v<<v^<><>^^vvv><^>><^^<><v<v>>><^<<v><<v><v^v^^v>><><^>>>^>v>v>><<>v^v><<v^^^<>>>vv^<>^^v^>>>>^<v><>><<<v>><<>>v^<^>v^^><v^^v<<<^<^>^v>^vv^>v>^v^v^<^><><^vvvvv><>v<^<vv^vv^><^v><v>v^>>vvv><<<^^v>^^<>^^>^v^v<^^^<v<<><>>^>v<>^<vvvvv^<v^<>v<^<^^<>^^<><v<>v^^><>v<v>>v><<v<^v>^>>^^vvv<<^>^v^<^<^vvv^^^<^<v>^v<>vv<<v^<v>>>^^>>v<v^<<^<v^^^v^^>><v<v<vv^v<<v<><^^v>^<<vv>>^^<<^^vvv>^>>^<<^vv^v>v<vv<^<^^<<<>^>v<v<>v<>^<vv<v>>v><vvvv<<>>>><>^>vv^^vv><<>><<^v^>>v<<><v^v>>^>^<v><><>>vv>v^><<^>^>><^^<v^^<vv<<><<v^<^^>^v<v>v^vv^^^<v>v^><>v^>v>v^v>><v>vv<>^>^<v<><v<>>v<>><<>^v^^^><><>>>^>vvv>^^<>v<v<v<^^^>>>>^>v>>v><<<^>>>^v<<^>>>>>><>>vv^v<<<>><^<^v^>vv<>v<>^^^^>><>><<>^v<<v>v<vvv^vv^<v^^^^^^^<>v<<^vv>v>^v>>^v^vv<>v>^>>>^v^v>><<<><>^<^<>>^^^v<v>^vv>^<><>><>v><v^><<^vv<>vv>v><<>^^v<>^>v<^^^^>>>^>>^^^>>v><>vvvv>>^<<v>v^^v^<vv>v<<<>v^<<vv>><>vv^^>>>^^><v^^^v^^>^^v^^^v^^><<^^><<v^<<v>^v<<^^vv<<^>v<><>v<^v>>><<<^v>>^v>v>^>^v^vv^><<<^^^vv^v^v>><^>><^>^^>v<^<v^^^<v>^v<<>v<>>><v>>v<<<v<vv>v>>v<<>>v<vv^vv>vvv>v^>v<<^^<vv>>v<^^><v<vv><^v<^<>v^<<>>^>^<<<<v<>v>v>><<^v<<>vvvv^v^>v>^<^>^>v^v>^<>>v^^<v>vv>v<^>^^<vv^<<<><<vv>^<<^^v^v<>><vv<<^<vv^<><^^>v^<><>v<>v><^>^><<v^<<^^>v>v^^v^<vv>vv^^v^v<<vv^vv><^<><^>v<v^v><>>vv<^>>^v<<<>><>><^><v>vv<<>vv^^vv<^>><v^^><vvv^^<>>>>v^v><<^vvv^v<v>vv^vv<^^<^>>>^<><<<v>^<vv^^v^v><vvv>vv>>>><^<v<>^vv^^<>>v>^^<<^<^^>>>v<<<>^<>^v^>v<^<<>^v<>>v<vv<v<<vv^>^^<^<>>vv<<vv^v^>><^^<v^v>^v^<v^<>><<^<>^>><>v^^><vv<<v^>v^<<v^>^v<<v>><vv^vv><^^<<v>>>v^v^>^<<v>v^<^^v^<v><>><>v<v<>^<v>v^<<^>v<<v>>><>>^><<^<<v>^^<v>^>^><>>>^vv<<^v>vv<>^^<^vvv<>>>>v>v^<<><>>>>>>^vv<>v<v>><^<vv><>v<^v>^v^v<vv^<<><v>>vv<>^<<<v^v<^vv>v>^<^v<>><v<v>>>v>v^>v^>v<<>v<^<><^><v<v<^v^<<v><vvv<<^^^<^v>>>^^^^<<<^v>^>^<^^>v^><>v<vv><v<<>^^^>vv^v^>^v<^<<<>v<v^vv<>>><^<<^<v^^<^^>>>v<<<^<^v>vv^>^v^vv>^^^^^v><^>v>^<<<<^<v>^^<<^<^><>vvv<>^v>vv>^v>^>>^<^>>^^>^v^><><vvv<<<^^><^>^^<v<<v<v^<^<vv^vvv<^>^^^<v^v^v<v^>^><^^^v<v^^<<<<v^<<<<^<<^<>v>v<<v><<>vvv<v>>><<><>^v>^v><^v^v^<<^>^>v<v<^^^<><v^>^^>v<v>v<>^^^v>^>>v^><^><^vv<^^^<vv<v^vvv>v<>v><<v^<v<>v>>v^<<v>^v^>^v^v<v>^^v<^<>><^>^>vvvv><v^^^v>>^v^>^<>v>^>^>^^<^<>>>v>^>><>><><<<>>>>vvv^<<>vv<v<<v<v^<^>>v>><><>^vv>>><<>^>>v^>^vv<v^<^^>>v<v>>vv<^<><<><<<><><^<>v<>^^<<><vv^<^>>v><<<>v^>v<v<<^<>^v<^>>^>>vvv<<vvv^<<^>>^^v><vvv^^<>>^v<>^<^v^vv>v<<v>v^^<^vv>vvv^><vv<>v^^<vv^>v<<>>^^<>^vv^^<><<<<<>v^^<><v><^>vv<^><>^>>^<^<^^<<><<>^v>vv<>><<>^<<>>^vv^v>v<v^^^v>^v^>v><v>^v><>^^^<v^<>v>>>^<<<^<>v<^>^v<>^vvv><>>vv^<^^<<v^v^<^^vv^<>>^<vvv^^^<vv><v<v><^^<^<^<<><<v<vv<^^^^<>v>^<v<vvv^^^<<v^>^v>>>^>^^^<v<^^>>>^<<<<<<^><v<^v<^v<^<>vv<>>vvvvv>^^<vv^><>^v^>^v^>^>v^>^^v>v^vvvvvv^<v><^^<<>vv><>vv<>vv<vv<v>^>^>v^>>><^<^<^^^<<>v><v<^^><<<vv>^><><v<>><v>^^v^<>>^<v>><^<^<<v<v^><<><^>v^^^><<^vv^<<^^<<>v^<^v>v<v^<>v>^><^><<<^v>v<<v<<v>v>>>^><>v<><>v^>v^v>>^v<v^v^<<<<<vv>v<>v>^v<>^v<>>><><^><^>>^^v><^>^>>^^>v>>><^>vvv^<>v><v<<<>v<<^^<>v><<><^v<>>^<v>><vv<vv><>v<^vvv^<^v>^<^><^<v>v<^v^v^^vv^v><vv>^<^<^><<^<v>v<vv><v^^><^<<><<^^v^<v^><^^<><<^<>v>v>>^v<^^<v^v^vv<v>><^vv^v>>^<^^v<v<<>v<^v>^<^><^^>v<>^>v>>v>>>v^>^<vv<v>v^v^<^^<><<<<>^<^vvv>^<vv>v^^>^v^<<>^^>vv><<>>^v><>^v^<<<>v>>^<v>>>^<v>^v>>^<><v>vv^v>>^<><^^>v<v^^><>>^>^>^v><>><v<<>^v^<>><v<<^>><<>^^>>v<<><<^<^<^^<v<^<^v<><^v>v^^^v^<v^^^>v>>^v<^^^>^><vv^>>v<^>v>^^^^>^v^<<>v<^>^><^^^>^>v<^v>>^^>vv<v><<v><^^^v^>>^^>^<v>^>^v<>^<<^^<vv^>><>>>v<<^^>vv^^v><v^^>>v<v<^><vv<v<>^<^<v^v^<><^^<v<><><<vv<^<<><^^<^v^<>v>><vv^<><v<v^>>v^v<v<^v^<<<><v>>v>><vvv<<>^>^vv<><<v^v>^^><<><<v>vv<<<^vvv>v^<><^v<<^<v><<<>><<^>^vvv>vv^v>^^^>v^^>^v>>^^><^v><^v>>^><^>v<><<v><^v<<><<<^^^^>^>v>^^v^^v>>>v^^<<^^>v><^>^<>^^>vv>v^><^<^>^>>>^<v<><^vvv^<>vv<^^<v>><^>>v<v>vv^<v<v<><v><>v^><<^>v>>><<vv<<<v^<<>^vv>>^<^^<<<v^^v^^vv>v>^<^>v><<v><^>^v>^v<v>v^v<>>v<>v><>^<<>>^<<<>>^><<<v><>^<vv<>^v<v<<<<>^^<vvvv^>^vvv^><<<><vvv<^^v>v<<<^<<v<><<<vv^<<^<^<v>>>^<>^>>^v>><><v<<>^<^^v^^>>>v>v>^^><>^<<vv>>>v^^v^>>>>>^>v<<>vv^>^>^^^<>>>><v<><><<^vv<v>^v>>^^>^<>>^^^v^><^<><>v>v<^<^<v<>v<><v><v^<vv><^^<>v>v>^^<>>^^><>>v^^<<<v<<>v^v<^<>>v<v>v^<^>>>v>vv<><<<<^><^<^^^<^^^^^^<^^>v<>v<v<>^<><>v>v^<>>>>v^vv>^vvv>vv>>v^>>>>vvvv>^^v^<<^^>>v>>v>^<>><<><v>>^<^v^<v>^<^v>^v^<v<<<>><<v>^>v^^^v^vv>>v<><<>^>v<>v<<>^^><v<vv<<>v><v>^v<v><v^<^^>v>v<^^<^>v^^<^v>>><<>>^^vvvv^vv^<>v><<<><>><>>v<>>>vv>vv<>vv<^>>^<<<><<<v>^>>>v<^<>^vv^^v><>v><>v^>v<^^<<v><^^<v>^v><<><<<>^>v<v<><v>>><>v^<^><^^v^v^^>v<>^^^^v^^v>>>v^<<^<<^vvv<<^vv>vv><<>^^v^vvv<^>>v^>^>v>>><>vv>v>>^^<vv^>v<v>^<<<v^<>^v>^v<v>^<v>vvv<>^v^^^<>v>^<vv^v<^<vvv^<<^>^<>>^>><^<><>>^><><v>^v<^<<v>><^vv><v<>^<><^>^<<>^<vv^v><><>^><>v>^<^<<<^>^<v^><<^<<<vv<<v><^v>^vvvvv<^<vv<vv<>^v<v<v<v^<v<^v>><v><^<<^^^^>^><<^<v^v^v<^v^vv^v<>^^^^v^<^<<><<<>><vv^^>^v<^v>>><^>>v>>><<v^<v^<vv^^<>^>^^^v<v>>>^v<v^^^<^><^>v^vv^>>^v>vv^<>^^v^^vvv>><^<^><v>>vvv^>^^>vv<^v>^v><>^>>v<^vvv>v^v>^<^^>>v>>><<<<>v>^v><<^v^<v<>^^^<^v>^>v<>>v>vv^<^^>^>v^^v<<>>><^>v^^vv^>^v>vv<^><<^^vv<v>^v<>^v^<v<>^vv^v<^^vvv>^<>v><vvv><v^v^>>>^<<>v^vv>^v><v>^^><<>^><^>><>><>vvv^^v<v^^^v^^<v<<<>^^<v^>>>vv<v^><^>vvv^>><vv^vv^^>>^>>^<^>><<>^v>^<>vv>^v>><v^v^v>>><<vv^>>v<^^>vv>><>^^^>^<^<<v^vvv<>><^<<v<^v>v><v^^<<v^v>^v^<>^^<><>^v^<>v^v^vv>>>v<<^>>>>^<>^v<^<^^v><<>^v^v^^vv^<<^<>v>>^>>>>^^^>^^>vv>>^v^<v<>^><v>>>v^v>v>><^v^^^<^<^^<><>v<<<vv>>^v<v^>^^<>>><^v<^v>>^<^>><<^v<<v>v<><>v^><vvv>><>^<v>>>^^<<v^><>^>^><^v>v<v^v^<v>><v<v^^>^^>>><<<vv^^^>>^>>^^^^<<v^<<>v><>>v^^<<v><^^v><<>^>vv>>^<<^<^>>^>>v^>vv<>><^v<vvv^^v>^v>vv<^<>><v><<<<vv^>>^v<^<v^>^<><<^>>v<v^v<^^>v>vv>v<<>^^^v^^^>>><^<v^^<v><<^>><v><>^^<<^v^v<>^v<<v<>>><vvv>>^^v<^vv>v>v>>><><^^^v^<^^<^vv<^^><v^><<^^vvv^^>>^><>>^^<vv^^vvv>>^>^^>>><><v^<<>>>vv^vvvvv<<>^^<<vv<>^vvv^>v^^^^>v^vv<<<v^>^v^>^^<v>v<>^v<v><^>vv>^^^<><^v^>>^<>v^v<^>vv^^^>^<^<><<^>^>>v><<<vv>v>><<v^><v^^<^v^<<v><<^<^<><^><>vv>^^^<v<>>v<><>^^^>^v>>><>>^<>v^^v<v^<<v<vv^^v<v>^>v<v^>v>^^^<>^<v>><^><vv>>>>>>>^v><v<^^^><<>>v<^<v<^<>v<vv<^<^^^^<^v<>v<v<^>v>v><>><^><>^<v<^>^^^^<^<>v^>>^^^>v^^><>>^>^>><<^><^>>^<v^^v^<><v<>v>>><<<>v<^^>v><<v^^v^<>>v>><v<^v>><>^^>>^^^<>><<>v<^^>^^^^>>>><<v><>>><<^<>>v>>^v^<><>><><^^v^vv^>^<^^<<^<<^^<v^>^<^v>^<^>^<>^<<<v^<>vv><<>^vv><<<>v><<^vv<^>vvv>^^^^>>^<<>v>>v^>v<^v^<><>^><<v>v><>^v>^<><>v<>>>v>>>^^^^v<^>>><><vv><^^<<<>^>>>v>^>^>^<>v<<v<<v<^<<><^^<vvvv>>v><v^v^v^vv^v><v>^><><>vv^v^<^vvv<><v>>v<v<<^^vv^>v^v>vvv^v>><<v^>v><>^v<>v>^^<v^v<v>vv^^>>>><^v<<<<v^v<v^<>>>vvvv^^<v^<vv<<v<v^><>>>><<vv<><>>>vv^^>>^>^<v<><^>^<vvvv^^>>^v^<^>^^<v<v>><v>vvv>^v>v><>v^v>>vv>><^<<v<>^v<^vv^^v>v^>v><><vv><^<<<v^<>>><vv^<>v><<v>^^<v<<<<^v^<^v><>v^<v><><>>^>vv>>^>v<v<>>^><vv^>>^^<<<><^^v>v>>>v^v>^vv^><><>>vv>>>vv><^^<>^>^vv<^^>^^>>>><<^<v>v><><^v>v^vvv>>>>v^>v>>>>>v^>^^v^<<vv^<<>>v<>>v<^v>^<vv>v^>vv<>^>>>^v<<vvv>>^<^^v^v<^>><vv<>>v>><>v<v>v>^<^^^>^><>vv>^<>^v>^<<v><>><<>>>v<^v^^";
-    for m in moves.chars() {
+fn part1(input: &(Array2D<char>, String)) -> i32 {
+    let mut grid = input.0.clone();
+    //simulate(&mut grid, input.1.as_str());
+    for m in input.1.as_str().chars() {
         do_move(&mut grid, m);
     }
-
     calculate_sum(&grid) as i32
+}
+
+#[aoc(day15, part2)]
+fn part2(input: &(Array2D<char>, String)) -> i32 {
+    let mut new_grid = scale_grid(&input.0);
+    //simulate_p2(&mut new_grid, input.1.as_str());
+    for m in input.1.as_str().chars() {
+        do_move_p2(&mut new_grid, m);
+    }
+    //display_grid(&new_grid);
+    calculate_sum_p2(&new_grid) as i32
 }
