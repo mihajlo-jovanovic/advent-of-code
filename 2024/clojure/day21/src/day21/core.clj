@@ -20,26 +20,27 @@
                          \v [-1 1]
                          \> [0 1]})
 
-;; (def current-position [2 3])
 (def gap [-2 0])
 
-(defn shortest-sequence [[x1 y1] [x2 y2]]
+(defn manhattan-distance [[x1 y1] [x2 y2]]
+  (+ (Math/abs (- x2 x1)) (Math/abs (- y2 y1))))
+
+(defn shortest-length-directional
+  "Return the shortest length of a sequence of moves  from start to end on a single 
+   directional keypad using Manhattan distance steps."
+  [start end]
+  (let [[x1 y1] (directional-keypad start)
+        [x2 y2] (directional-keypad end)]
+    (inc (manhattan-distance [x1 y1] [x2 y2]))))
+
+(defn shortest-sequence
+  "Converts to a string the shortest sequence of moves from [x1 y1] to [x2 y2]
+   using only the characters '<', '>', '^', 'v'."
+  [[x1 y1] [x2 y2]]
   (let [move-x (- x2 x1)
         move-y (- y2 y1)]
     (str (apply str (repeat (Math/abs move-x) (if (pos? move-x) \> \<)))
          (apply str (repeat (Math/abs move-y) (if (pos? move-y) \v \^))))))
-
-;; (defn find-path-dfs [[x1 y1] [x2 y2]]
-;;   (loop [stack (vector [x1 y1])
-;;          result #{}]
-;;     (if (empty? stack)
-;;       result
-;;       (let [[x y] (peek stack)
-;;             new-stack (pop stack)
-;;             move-y (if (pos? (- y2 y)) 1 -1)
-;;             new-paths (if (= x x2) [] [[x y] [(+ x move-x) y]])
-;;             new-paths' (if (= y y2) new-paths (vector [[x y] [x (+ y move-y)]] new-paths))]
-;;         (recur new-stack (into result new-paths'))))))
 
 (defn choose
   "Return a sequence of all ways to choose `k` elements from sequence `s`.
@@ -62,7 +63,7 @@
 (defn all-shortest-paths
   "Return a sequence of all possible shortest paths (each path is a sequence
    of [x y] coordinates) from start to end using Manhattan distance steps."
-  [[sx sy :as start] [ex ey :as end]]
+  [[sx sy :as start] [ex ey]]
   (let [dx        (- ex sx)
         dy        (- ey sy)
         steps-x   (Math/abs dx)
@@ -85,19 +86,6 @@
        [start]
        (range n)))))
 
-;; to find all valid paths from start [2 3] to end [0 0] point:
-;; (def tmp (filter (fn [coll] (every? #(not= [0 3] %) coll)) (all-shortest-paths [2 3] [0 0])))
-;; (map (fn [coll] (apply str (map (fn [x] (shortest-sequence (first x) (second x))) coll))) (map #(partition 2 1 %) tmp))
-
-;; (defn input-sequence [code]
-;;   (let [[final-sequence _current-position]
-;;         (reduce (fn [[acc-sequence position] element]
-;;                   (let [new-sequence (shortest-sequence position (numeric-keypad element))]
-;;                     [(str acc-sequence new-sequence \A) (numeric-keypad element)]))
-;;                 ["" (numeric-keypad \A)]
-;;                 (map #(Integer/parseInt (str %)) (drop-last code)))]
-;;     (str final-sequence (shortest-sequence _current-position (numeric-keypad (last code))) \A)))
-
 (defn combine-strings [coll1 coll2]
   (for [x coll1
         y coll2]
@@ -113,17 +101,37 @@
                 (char-array code))]
     final-sequences))
 
-(defn part1 [coll]
+(defn all-possible [start end]
+  (let [new-sequences (filter (fn [coll] (every? #(not= gap %) coll)) (all-shortest-paths (directional-keypad start) (directional-keypad end)))
+        new-sequences' (map (fn [x] (apply str (map #(shortest-sequence (first %) (second %)) (partition 2 1 x)))) new-sequences)]
+    new-sequences'))
+
+;; (defn distance
+;;   "Calculate distance between two positions on a set of n directional keypads"
+;;   [start end n]
+;;   (if (zero? n)
+;;     (shortest-length-directional start end)
+;;     (let [all-paths (map #(partition 2 1 (str \A % \A)) (all-possible start end))]
+;;       (apply min (map #(reduce (fn [acc [start2 end2]] (+ acc (distance start2 end2 (dec n)))) 0 %) all-paths)))))
+
+(def m-distance
+  "Calculate distance between two positions on a set of n directional keypads"
+  (memoize
+   (fn [start end n]
+     (if (zero? n)
+       (shortest-length-directional start end)
+       (let [all-paths (map #(partition 2 1 (str \A % \A)) (all-possible start end))]
+         (apply min (map #(reduce (fn [acc [start end]] (+ acc (m-distance start end (dec n)))) 0 %) all-paths)))))))
+
+(defn solve [coll n]
   (reduce (fn [acc code]
             (let [sequences (input-sequence numeric-keypad code)
-                  sequences' (flatten (map #(input-sequence directional-keypad %) sequences))
-                  sequences'' (flatten (map #(input-sequence directional-keypad %) sequences'))
-                  ;; sequences''' (flatten (map #(input-sequence directional-keypad %) sequences''))
-                  lenght-of-shortest-sequence (apply min (map count sequences''))
+                  parts (map #(partition 2 1 (str \A %)) sequences)
+                  min-length (apply min (map #(reduce (fn [acc [start end]] (+ acc (m-distance start end (dec n)))) 0 %) parts))
                   numeric-part (Integer/parseInt (.substring code 0 (dec (count code))))]
-              ;; (println code numeric-part lenght-of-shortest-sequence)
-              (+ acc (* lenght-of-shortest-sequence numeric-part)))) 0 coll))
+              (+ acc (* min-length numeric-part)))) 0 coll))
 
-(defn -main
-  []
-  (time (println "Part 1: " (part1 (s/split-lines (slurp "resources/input.txt"))))))
+(defn -main []
+  (let [input (s/split-lines (slurp "resources/input.txt"))]
+    (println "Part 1: " (solve input 2))
+    (time (println "Part 2: " (solve input 25)))))

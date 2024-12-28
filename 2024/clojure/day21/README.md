@@ -10,8 +10,13 @@ Ultimately this worked for part 1 and I was happy with how easy to reason about 
 
 ## Part 2
 
-This one got me stuck for now. Tried the obvious brute force approach and quickly realized it's going nowhere (there are almost a 1MM unique shortest paths even for the two directional keypads!). Then I also tried to see the pattern in lengths for different inputs - another dead end.
-I have a feeling I'll need top invest some time into learning DP for next year...
+This one took me the longest amount of time this year by far...
+I knew right away it would involve some type of `dynamic programming` approach, of breaking down inputs into smaller chucks that could then be 
+solved quickly using caching (in Clojure there is a very useful momeoize function to do just that). I also knew I obviously could not continue to 
+build the Strings in order to check for the shortest. However it still took several hours to finally get the right level of abstraction and
+convert it into code. I did not want to seek help on this one and was stubborn about coming up with a solution myself. In the end, one
+general advice from someone on Reddit made it difference: when you;'re stuck on a puzzle, step away from a computer and go to pencil and paper.
+After getting a good night sleep I did just that and an hour later - voila!
 
 
 ## Runtime
@@ -19,5 +24,6 @@ I have a feeling I'll need top invest some time into learning DP for next year..
 ```bash
 day21 git:(main) ✗ java -jar target/uberjar/day21-0.1.0-SNAPSHOT-standalone.jar
 Part 1:  174124
-"Elapsed time: 25466.394584 msecs"
+Part 2:  216668579770346
+"Elapsed time: 26.74275 msecs"
 ```
