@@ -65,3 +65,6 @@
 
 (deftest p1-test
   (is (= 607 (p1))))
+
+(deftest p2-test
+  (is (= [577, 18 1 577] (p2))))
