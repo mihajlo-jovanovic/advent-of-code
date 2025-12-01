@@ -2,16 +2,21 @@
   (:require [clojure.string :as s]))
 
 (defn parse-input [filename]
-  (let [lines (slurp filename)
-        nums (map #(Long/parseLong %) (s/split-lines lines))]
-    (vec nums)))
+  (->> (slurp filename)
+       (s/split-lines)
+       (map #(Long/parseLong %))
+       (vec)))
 
 (defn times-cross-zero [n1 n2]
-  (let [r (if (> n1 n2) (range n2 n1) (range (inc n1) (inc n2)))]
-    (count (filter #(= 0 (mod % 100)) r))))
+  (let [divisible-by-100? #(= 0 (mod % 100))
+        dial-clicks (if (> n1 n2) (range n2 n1) (range n2 n1 -1))]
+    (count (filter divisible-by-100? dial-clicks))))
 
 (defn p1 [filename]
-  (count (filter #(= 0 (mod % 100)) (reductions + 50 (parse-input filename)))))
+  (->> (parse-input filename)
+       (reductions + 50)
+       (filter #(= 0 (mod % 100)))
+       (count)))
 
 (defn p2 [filename]
   (let [nums (parse-input filename)]
