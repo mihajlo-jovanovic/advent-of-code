@@ -7,49 +7,43 @@
     (->> (s/split (s/trim (slurp filepath)) #",")
          (mapv parse-interval))))
 
-(defn count-invalid-helper [firstID lastID cnt-digits]
-  (let [exp (fn [x n]
-              (loop [acc 1 n n]
-                (if (zero? n) acc
-                    (recur (* x acc) (dec n)))))
-        pow-of-10 (exp 10 (/ cnt-digits 2))
-        beg (if (= cnt-digits (count (str firstID))) (quot firstID pow-of-10) (exp 10 (dec (/ cnt-digits 2))))
-        end (if (= cnt-digits (count (str lastID)))  (quot lastID pow-of-10) (dec pow-of-10))
-        beg2 (+ (* beg pow-of-10) beg)
-        end2 (+ (* end pow-of-10) end)
-        beg3 (if (>= beg2 firstID) beg (inc beg))
-        end3 (if (<= end2 lastID) end (dec end))]
-    (reduce + (map #(+ (* % pow-of-10) %) (range beg3 (inc end3))))))
+;; Part 1
 
-(defn count-invalid [[firstID lastID]]
-  (let [cnt-digits-firstID (count (str firstID))
-        cnt-digits-lastID (count (str lastID))
-        cnt-digits (filter even? (range cnt-digits-firstID (inc cnt-digits-lastID)))]
-    (if (not (seq cnt-digits))
-      0
-      (count-invalid-helper firstID lastID (first cnt-digits)))))
+(defn- is-invalid-p1? [n]
+  (let [s (str n)
+        cnt (count s)]
+    (and (even? cnt)
+         (let [half (/ cnt 2)
+               [first-half second-half] (split-at half s)]
+           (= first-half second-half)))))
 
 (defn p1 [id-ranges]
-  (reduce + (map count-invalid id-ranges)))
+  (let [filter-invalid (fn [[start end]]
+                         (filter is-invalid-p1? (range start (inc end))))]
+    (->> id-ranges
+         (mapcat filter-invalid)
+         (reduce +))))
 
 ;; Part 2
-(defn divisible-by? [number divisor]
+
+(defn- divisible-by? [number divisor]
   (zero? (rem number divisor)))
 
-(defn is-invalid? [s]
-  (let [repeated-digits-length-ranges (fn [s] (filter #(divisible-by? (count s) %) (range 1 (inc (quot (count s) 2)))))]
-    (->> (repeated-digits-length-ranges s)
-         (map #(apply = (partition % s)))
-         (some true?))))
+(defn- is-invalid-p2? [s]
+  (let [len (count s)
+        possible-chunk-sizes (filter #(divisible-by? len %) (range 1 (inc (quot len 2))))]
+    (some (fn [chunk-size]
+            (apply = (partition chunk-size s)))
+          possible-chunk-sizes)))
 
 (defn p2 [id-ranges]
-  (let [filter-invalid (fn [[firstID lastID]] (filter #(is-invalid? (str %)) (range firstID (inc lastID))))]
+  (let [filter-invalid (fn [[start end]]
+                         (filter #(is-invalid-p2? (str %)) (range start (inc end))))]
     (->> id-ranges
-         (map filter-invalid)
-         flatten
+         (mapcat filter-invalid)
          (reduce +))))
 
 (defn -main []
   (let [input (parse-input "resources/day2.txt")]
     (time (println "Part 1: " (p1 input)))
-    (time (println "Part 1: " (p2 input)))))
+    (time (println "Part 2: " (p2 input)))))
