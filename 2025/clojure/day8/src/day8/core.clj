@@ -1,43 +1,49 @@
 (ns day8.core
   (:require [clojure.string :as str]
             [clojure.math :as math]
-            [clojure.set :as s])
+            [clojure.set :as set])
   (:gen-class))
 
 (defn parse-input [filepath]
-  (let [lines (str/split-lines (slurp filepath))
-        parse-coords (fn [s] (map Long/parseLong (str/split s #",")))]
-    (map parse-coords lines)))
+  (->> (slurp filepath)
+       str/split-lines
+       (mapv #(mapv parse-long (str/split % #",")))))
 
 (defn distance [[x1 y1 z1] [x2 y2 z2]]
-  math/sqrt (+ (math/pow (- x1 x2) 2) (math/pow (- y1 y2) 2) (math/pow (- z1 z2) 2)))
+  (math/sqrt (+ (math/pow (- x1 x2) 2)
+                (math/pow (- y1 y2) 2)
+                (math/pow (- z1 z2) 2))))
 
 (defn edges-seq [nodes]
-  (map second (sort-by first (for [x1 nodes x2 nodes] (if (= x1 x2) [Long/MAX_VALUE [x1 x2]] [(distance x1 x2) [x1 x2]])))))
+  (->> (for [x1 nodes x2 nodes
+             :when (not= x1 x2)]
+         [(distance x1 x2) [x1 x2]])
+       (sort-by first)
+       (map second)))
 
 (defn successors [edges node]
-  (map second (filter (fn [[from to]] (= from node)) edges)))
+  (keep (fn [[from to]] (when (= from node) to)) edges))
 
 (defn dfs [edges f node]
-  (loop [stack (vector (vector node #{}))
+  (loop [stack [[node #{}]]
          visited #{}]
     (if (empty? stack)
       visited
-      (let [[curr seen]  (peek stack)
-            neighbors (f edges curr)
-            minus-already-seen (filter #(not (contains? seen %)) neighbors)]
-        (recur (into (pop stack) (map #(vector % (conj seen curr)) minus-already-seen)) (conj visited curr))))))
+      (let [[curr seen] (peek stack)
+            unseen (remove seen (f edges curr))]
+        (recur (into (pop stack) (map #(vector % (conj seen curr)) unseen))
+               (conj visited curr))))))
 
 (defn p1 [nodes edges count-of-pairs]
   (loop [n nodes
-         e (vec (take (* 2 count-of-pairs) edges))   ;; since we are including both from-to and to-from edges, we  must multiply by 2
+         e (vec (take (* 2 count-of-pairs) edges))
          circuits []]
     (if (empty? n)
-      (apply * (take 3 (sort > circuits)))
-      (let [next-circuit (dfs e successors (first n))
-            n-minus-new-circuit (filter #(not (contains? next-circuit %)) n)
-            e-minus-new-circuit (filter #(not (contains? next-circuit (first %))) e)]
-        (recur n-minus-new-circuit e-minus-new-circuit (conj circuits (count next-circuit)))))))
+      (->> circuits (sort >) (take 3) (apply *))
+      (let [next-circuit (dfs e successors (first n))]
+        (recur (remove next-circuit n)
+               (remove #(next-circuit (first %)) e)
+               (conj circuits (count next-circuit)))))))
 
 (defn- find-component [connected node]
   (first (filter #(contains? % node) connected)))
@@ -51,7 +57,7 @@
   (-> connected
       (disj c1)
       (disj c2)
-      (conj (s/union c1 c2))))
+      (conj (set/union c1 c2))))
 
 (defn p2 [edges-seq total-nodes]
   (loop [edges edges-seq
