@@ -4,5 +4,7 @@
 
 (deftest test-day12
   (testing "Day 12 test"
-    (let [input (parse-input "resources/day12.txt")]
-      (is (= 5 (solve input))))))
+    (let [input-small (parse-input "resources/sample.txt")
+          input-large (parse-input "resources/day12.txt")]
+      (is (= 2 (solve-take2 input-small)))
+      (is (= 526 (solve-take2 input-large))))))
