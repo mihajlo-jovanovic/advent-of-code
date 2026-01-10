@@ -2,15 +2,6 @@
   (:require [clojure.string :as str])
   (:gen-class))
 
-(defn parse-input [filepath]
-  (let [lines (str/split-lines (slurp filepath))
-        lumber-map (into {}
-                         (mapcat (fn [[y line]]
-                                   (map-indexed (fn [x c] {[x y] c}) line))
-                                 (map-indexed vector lines)))]
-    {:lumber-map lumber-map
-     :size (count lines)}))
-
 (defn change-single-acre [[[x y] c] {:keys [lumber-map size]}]
   (let [neighbors (for [a [-1 0 1] b [-1 0 1]
                         :let [new-x (+ x a) new-y (+ y b)]
@@ -64,6 +55,49 @@
         offset (+ loop-start-idx (mod (- (inc goal-minutes) loop-start-idx) loop-len))]
     (solve input offset)))
 
+(defn parse-input [filepath]
+  (let [lines (str/split-lines (slurp filepath))
+        size  (count lines)]
+    {:lumber-map (into {}
+                       (for [[y line] (map-indexed vector lines)
+                             [x c]    (map-indexed vector line)]
+                         [[x y] c]))
+     :size size}))
+
+(defn step [{:keys [lumber-map size] :as state}]
+  (let [deltas [[-1 -1] [0 -1] [1 -1] [-1 0] [1 0] [-1 1] [0 1] [1 1]]]
+    (assoc state :lumber-map
+           (into {}
+                 (map (fn [[[x y] c]]
+                        (let [freqs (frequencies (map #(lumber-map [(+ x (first %))
+                                                                    (+ y (second %))])
+                                                      deltas))
+                              trees  (get freqs \| 0)
+                              yards  (get freqs \# 0)
+                              new-c  (case c
+                                       \. (if (>= trees 3) \| \.)
+                                       \| (if (>= yards 3) \# \|)
+                                       \# (if (and (>= yards 1) (>= trees 1)) \# \.)
+                                       c)]
+                          [[x y] new-c]))
+                      lumber-map)))))
+
+(defn find-cycle [states]
+  (reduce (fn [[seen i] state]
+            (if-let [prev (get seen state)]
+              (reduced [prev i])
+              [(assoc seen state i) (inc i)]))
+          [{} 0]
+          states))
+
+(defn solve-p2 [initial-state target]
+  (let [states (iterate step initial-state)
+        [start end] (find-cycle states)
+        period (- end start)
+        remaining (- target start)
+        offset (rem remaining period)]
+    (nth states (+ start offset))))
+
 (defn -main []
   (let [input (parse-input "resources/day18.txt")]
-    (println "Part 2: " (time (p2 input)))))
+    (println "Part 2: " (time (solve-p2 input 1000000000)))))
