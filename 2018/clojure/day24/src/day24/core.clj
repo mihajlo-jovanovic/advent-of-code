@@ -1,6 +1,5 @@
 (ns day24.core
-  (:require [clojure.string :as str])
-  (:gen-class))
+  (:require [clojure.string :as str]))
 
 (def ^:private line-re
   ;; groups:
@@ -126,7 +125,9 @@
               (let [curr (get armies grp-id)
                     target-type (if (= :immune (:type curr)) :infect :immune)
                     selected-ids (into #{} (map :target-id (vals acc)))
-                    remaining-targets (filter #(and (= target-type (:type (val %))) (not (contains? selected-ids (key %)))) armies)
+                    remaining-targets (filter #(and (= target-type (:type (val %)))
+                                                    (not (contains? selected-ids (key %)))
+                                                    (pos? (calc-damage curr (val %)))) armies)
                     target-id (select-target-id curr remaining-targets)]
                 (if target-id
                   (assoc acc grp-id (assoc curr :target-id target-id))
@@ -147,7 +148,7 @@
         attack-order-ids (map key (sort-by #(:initiative (val %)) #(compare %2 %1) attacking-only))]
     (reduce (fn [acc grp-id]
               (let [attacker (get acc grp-id)
-                    defender (get armies (:target-id attacker))
+                    defender (get acc (:target-id attacker))
                     units-lost (if attacker (calc-units-lost attacker defender) 0)    ;; attacker might've gotten killed first
                     all-units-killed? (if defender (>= units-lost (:units defender)) false)]
                 (if all-units-killed?
@@ -163,9 +164,31 @@
         reset-targets (into {} (map #(assoc {} (key %) (dissoc (val %) :target-id)) after-attack))]
     reset-targets))
 
+(defn fight [armies]
+  (loop [a armies]
+    (let [prev-units (apply + (map :units (vals a)))
+          a' (round a)
+          curr-units (apply + (map :units (vals a')))
+          types (distinct (map :type (vals a')))]
+      (cond
+        (= 1 (count types)) a'
+        (= prev-units curr-units) {0 {:type :infect}} ;; (do (println "STALEMATE detected! Units:" curr-units "Types:" types "Groups:" a') a')
+        :else (recur a')))))
+
 (defn p1 [input]
-  (let [input' (decorate input)
-        both-armies-present? #(= 2 (count (distinct (map :type (vals %)))))
-        before-final-state (last (take-while both-armies-present? (iterate round input')))
-        final-state (round before-final-state)]
+  (let [final-state (fight (decorate input))]
+    (apply + (map :units (vals final-state)))))
+
+(defn boost [{:keys [immune infections]} n]
+  {:immune
+   (map #(update-in % [:attack :damage] + n) immune)
+   :infections infections})
+
+(defn winner-type [input]
+  (let [final-state (fight (decorate input))]
+    (first (map :type (vals final-state)))))
+
+(defn p2 [input]
+  (let [smallest-boost (inc (last (take-while #(= :infect (winner-type (boost input %))) (range 1 2000))))
+        final-state (fight (decorate (boost input smallest-boost)))]
     (apply + (map :units (vals final-state)))))
