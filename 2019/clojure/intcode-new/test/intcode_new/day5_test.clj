@@ -5,4 +5,4 @@
 
 (deftest test-day5
   (testing "Day 5"
-    (is (= 5346030 (d5/solve-day5-part1 (ic/parse-input "resources/day5.txt"))))))
+    (is (= 5346030 (d5/solve-part1 (ic/parse-input "resources/day5.txt"))))))

@@ -46,6 +46,9 @@
         (mem-write p3 val)
         (update :pc + 4))))
 
+(defmethod instruction :default [st]
+  (throw (ex-info "Unknown opcode" {:pc (:pc st) :op (mem-read st (:pc st))})))
+
 (defmethod instruction 1
   [state]
   (exec-arithmetic state))

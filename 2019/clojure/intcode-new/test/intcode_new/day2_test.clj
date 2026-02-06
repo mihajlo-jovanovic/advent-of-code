@@ -5,5 +5,5 @@
 
 (deftest test-day2
   (testing "Day 2"
-    (is (= 2782414 (d2/solve-day2-part1 (ic/parse-input "resources/day2.txt") 12 2)))
-    (is (= 9820 (d2/solve-day2-part2 (ic/parse-input "resources/day2.txt"))))))
+    (is (= 2782414 (d2/solve-part1 (ic/parse-input "resources/day2.txt") 12 2)))
+    (is (= 9820 (d2/solve-part2 (ic/parse-input "resources/day2.txt"))))))
